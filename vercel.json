@@ -5,21 +5,18 @@
   "outputDirectory": "backoffice-admin/dist",
   "functions": {
     "backoffice-api/src/main.ts": {
-      "runtime": "nodejs18.x",
+      "runtime": "@vercel/node",
       "includeFiles": "backoffice-api/**"
     }
   },
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/backoffice-api/src/main.ts"
+      "source": "/api/(.*)",
+      "destination": "/backoffice-api/src/main.ts"
     },
     {
-      "src": "/(.*)",
-      "dest": "/backoffice-admin/$1"
+      "source": "/(.*)",
+      "destination": "/backoffice-admin/$1"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  ]
 }
