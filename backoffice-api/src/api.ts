@@ -1,12 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { ExpressAdapter } from '@nestjs/platform-express';
 
 let app: any;
 
 async function bootstrap() {
   if (!app) {
-    app = await NestFactory.create(AppModule, {
+    app = await NestFactory.create(AppModule, new ExpressAdapter(), {
       cors: true,
       logger: ['error', 'warn']
     });
@@ -31,6 +32,10 @@ export default async function handler(req: any, res: any) {
   const app = await bootstrap();
   const server = app.getHttpServer();
 
-  // Handle the request
-  server.emit('request', req, res);
+  // Handle the request using the underlying server
+  return new Promise((resolve, reject) => {
+    server.emit('request', req, res);
+    res.on('finish', resolve);
+    res.on('error', reject);
+  });
 }
