@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "cd backoffice-api && npm run start:prod"
+startCommand = "cd backoffice-api && npm install && npm run build && npm run start:prod"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
 
@@ -16,6 +16,9 @@ NODE_ENV = "production"
 TYPEORM_SYNCHRONIZE = "false"
 TYPEORM_RUN_MIGRATIONS = "true"
 TYPEORM_LOGGING = "error"
+JWT_SECRET = "your-jwt-secret-change-this"
+DEFAULT_ADMIN_USERNAME = "admin"
+DEFAULT_ADMIN_PASSWORD = "ChangeMe123!"
 
 [[services.databases]]
 name = "backoffice-db"
