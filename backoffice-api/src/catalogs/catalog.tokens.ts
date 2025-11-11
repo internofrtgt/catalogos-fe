@@ -1,0 +1,1 @@
+export const CATALOG_DEFINITIONS = Symbol('CATALOG_DEFINITIONS');

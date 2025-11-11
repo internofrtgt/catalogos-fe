@@ -1,0 +1,21 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "cd backoffice-api && npm run start:prod"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+[[services]]
+name = "api"
+source = "backoffice-api"
+
+[services.variables]
+PORT = "3000"
+NODE_ENV = "production"
+TYPEORM_SYNCHRONIZE = "false"
+TYPEORM_RUN_MIGRATIONS = "true"
+TYPEORM_LOGGING = "error"
+
+[[services.databases]]
+name = "backoffice-db"
