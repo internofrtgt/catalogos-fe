@@ -1,19 +1,14 @@
 {
   "version": 2,
   "name": "backoffice-lasalle",
-  "builds": [
-    {
-      "src": "backoffice-api/src/main.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "backoffice-admin/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+  "buildCommand": "cd backoffice-admin && npm run build",
+  "outputDirectory": "backoffice-admin/dist",
+  "functions": {
+    "backoffice-api/src/main.ts": {
+      "runtime": "nodejs18.x",
+      "includeFiles": "backoffice-api/**"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/(.*)",
@@ -24,12 +19,6 @@
       "dest": "/backoffice-admin/$1"
     }
   ],
-  "functions": {
-    "backoffice-api/src/main.ts": {
-      "runtime": "nodejs18.x",
-      "includeFiles": "backoffice-api/**"
-    }
-  },
   "env": {
     "NODE_ENV": "production"
   }
