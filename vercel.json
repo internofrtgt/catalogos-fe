@@ -6,6 +6,7 @@
       "use": "@vercel/node",
       "config": {
         "includeFiles": "backoffice-api/src/**",
+        "excludeFiles": "backoffice-api/src/database/migrations/**",
         "maxLambdaSize": "50mb"
       }
     },

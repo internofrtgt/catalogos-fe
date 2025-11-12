@@ -43,7 +43,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
         migrationsRun:
           this.configService.get<string>('TYPEORM_RUN_MIGRATIONS', 'false') ===
           'true',
-        migrations: [join(__dirname, 'migrations/*{.ts,.js}')],
+        migrations: [],
         logging: this.resolveLogging(isProduction),
         ssl: { rejectUnauthorized: false },
       };
@@ -73,7 +73,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
       migrationsRun:
         this.configService.get<string>('TYPEORM_RUN_MIGRATIONS', 'false') ===
         'true',
-      migrations: [join(__dirname, 'migrations/*{.ts,.js}')],
+      migrations: [],
       logging: this.resolveLogging(isProduction),
       ssl: this.resolveSsl(),
     };
