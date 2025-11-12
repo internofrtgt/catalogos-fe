@@ -13,6 +13,13 @@ const pool = new Pool({
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
+// Define JWT payload interface
+interface JwtPayload {
+  sub: string;
+  username: string;
+  role: string;
+}
+
 // Test database connection
 pool.query('SELECT NOW()')
   .then(() => console.log('Database connected successfully'))
@@ -173,7 +180,7 @@ app.post('/api/setup/admin', async (req, res) => {
 });
 
 // Middleware to verify JWT token
-function authenticateToken(req: any, res: any, next: any) {
+function authenticateToken(req: express.Request & { user?: JwtPayload }, res: express.Response, next: express.NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Token required' });
@@ -181,7 +188,7 @@ function authenticateToken(req: any, res: any, next: any) {
 
   const token = authHeader.substring(7);
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
     req.user = decoded;
     next();
   } catch (error) {
@@ -190,8 +197,8 @@ function authenticateToken(req: any, res: any, next: any) {
 }
 
 // Middleware to check admin role
-function requireAdmin(req: any, res: any, next: any) {
-  if (req.user.role !== 'ADMIN') {
+function requireAdmin(req: express.Request & { user?: JwtPayload }, res: express.Response, next: express.NextFunction) {
+  if (!req.user || req.user.role !== 'ADMIN') {
     return res.status(403).json({ message: 'Admin role required' });
   }
   next();
