@@ -25,7 +25,18 @@
     },
     {
       "source": "/(.*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "accept",
+          "value": "text/html"
+        }
+      ],
       "destination": "/backoffice-admin/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/backoffice-admin/$1"
     }
   ]
 }
