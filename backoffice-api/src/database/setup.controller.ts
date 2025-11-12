@@ -1,6 +1,7 @@
 import { Controller, Get, Post } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { AppDataSource } from './typeorm.datasource';
+import * as seed from '../seeds/seed';
 
 @Controller('api/setup')
 export class SetupController {
@@ -27,15 +28,14 @@ export class SetupController {
   }
 
   @Post('seed')
-  async seed() {
+  async runSeed() {
     try {
       if (!AppDataSource.isInitialized) {
         await AppDataSource.initialize();
       }
 
-      // Import and run seed
-      const { seed } = await import('../seeds/seed');
-      await seed();
+      // Run seed function
+      await seed.seed();
 
       return {
         success: true,
