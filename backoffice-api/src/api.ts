@@ -3935,6 +3935,23 @@ app.get('/api/diagnostic/cantones-data', authenticateToken, requireAdmin, async 
   }
 });
 
+// Simple raw data endpoint for cantones (no transformation)
+app.get('/api/diagnostic/cantones-raw', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    console.log('Getting raw cantones data...');
+    const result = await pool.query('SELECT * FROM cantones LIMIT 3');
+    console.log('Raw cantones data:', result.rows);
+    res.json({
+      message: 'Raw cantones data',
+      data: result.rows,
+      count: result.rows.length
+    });
+  } catch (error) {
+    console.error('Raw cantones data error:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
 // Special endpoint to transform cantones table structure
 app.post('/api/schemas/transform-cantones', authenticateToken, requireAdmin, async (req, res) => {
   try {
