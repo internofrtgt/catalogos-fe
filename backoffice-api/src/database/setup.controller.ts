@@ -1,10 +1,14 @@
 import { Controller, Get, Post } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { AppDataSource } from './typeorm.datasource';
-import * as seed from '../seeds/seed';
+import { ConfigService } from '@nestjs/config';
+import { User } from '../users/user.entity';
+import * as bcrypt from 'bcrypt';
 
 @Controller('api/setup')
 export class SetupController {
+  constructor(private configService: ConfigService) {}
+
   @Post('migrate')
   async migrate() {
     try {
@@ -28,23 +32,56 @@ export class SetupController {
   }
 
   @Post('seed')
-  async runSeed() {
+  async createAdminUser() {
     try {
       if (!AppDataSource.isInitialized) {
         await AppDataSource.initialize();
       }
 
-      // Run seed function
-      await seed.seed();
+      const userRepository = AppDataSource.getRepository(User);
+
+      const username = this.configService.get<string>('DEFAULT_ADMIN_USERNAME', 'admin');
+      const password = this.configService.get<string>('DEFAULT_ADMIN_PASSWORD', 'ChangeMe123!');
+
+      // Check if admin user already exists
+      let existingUser = await userRepository.findOne({
+        where: { username: username.toLowerCase() }
+      });
+
+      if (existingUser) {
+        return {
+          success: true,
+          message: 'Admin user already exists',
+          user: {
+            username: existingUser.username,
+            role: existingUser.role
+          }
+        };
+      }
+
+      // Create admin user
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const adminUser = userRepository.create({
+        username: username.toLowerCase(),
+        password: hashedPassword,
+        role: 'ADMIN',
+        isActive: true
+      });
+
+      await userRepository.save(adminUser);
 
       return {
         success: true,
-        message: 'Seed completed successfully'
+        message: 'Admin user created successfully',
+        user: {
+          username: adminUser.username,
+          role: adminUser.role
+        }
       };
     } catch (error) {
       return {
         success: false,
-        message: 'Seed failed',
+        message: 'Admin user creation failed',
         error: error.message
       };
     }
@@ -61,11 +98,21 @@ export class SetupController {
         'SELECT * FROM migrations ORDER BY id DESC LIMIT 5'
       );
 
+      // Check admin user
+      const userRepository = AppDataSource.getRepository(User);
+      const adminUser = await userRepository.findOne({
+        where: { role: 'ADMIN' }
+      });
+
       return {
         success: true,
         database: 'connected',
         migrations: migrations.length,
-        lastMigrations: migrations
+        lastMigrations: migrations,
+        adminUser: adminUser ? {
+          username: adminUser.username,
+          role: adminUser.role
+        } : null
       };
     } catch (error) {
       return {
