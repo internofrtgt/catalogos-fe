@@ -585,6 +585,28 @@ async function initializeGeographyTables() {
 async function initializeAllTables() {
   await initializeCatalogTables();
   await initializeGeographyTables();
+  await initializeApiDocsTable();
+}
+
+// Initialize api_documents table
+async function initializeApiDocsTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS api_documents (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        title VARCHAR(160) NOT NULL,
+        version VARCHAR(32) NOT NULL,
+        summary VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (title, version)
+      )
+    `);
+    console.log('Table api_documents created successfully');
+  } catch (error) {
+    console.error('Error creating api_documents table:', error);
+  }
 }
 
 initializeAllTables();
@@ -1503,6 +1525,252 @@ app.post('/api/geography/seed', authenticateToken, requireAdmin, async (req, res
     });
   } catch (error) {
     console.error('Seed geography data error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// API Documentation endpoints
+app.get('/api/api-docs', authenticateToken, async (req, res) => {
+  try {
+    const { search, page = 1, limit = 20 } = req.query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Math.min(Math.max(Number(limit), 1), 100);
+
+    let query = 'SELECT id, title, version, summary, created_at, updated_at FROM api_documents';
+    let countQuery = 'SELECT COUNT(*) FROM api_documents';
+    const params: any[] = [];
+    const countParams: any[] = [];
+
+    // Build WHERE conditions for search
+    const whereConditions: string[] = [];
+
+    if (search) {
+      const searchTerm = String(search).trim().toLowerCase();
+      whereConditions.push('(LOWER(title) ILIKE $' + (params.length + 1) + ' OR LOWER(version) ILIKE $' + (params.length + 1) + ')');
+      params.push(`%${searchTerm}%`);
+      countParams.push(`%${searchTerm}%`);
+    }
+
+    // Add WHERE clause if there are conditions
+    if (whereConditions.length > 0) {
+      const whereClause = ' WHERE ' + whereConditions.join(' AND ');
+      query += whereClause;
+      countQuery += whereClause;
+    }
+
+    query += ' ORDER BY updated_at DESC, id DESC';
+    const offset = (pageNumber - 1) * limitNumber;
+    query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
+
+    const [docsResult, countResult] = await Promise.all([
+      pool.query(query, params),
+      pool.query(countQuery, countParams)
+    ]);
+
+    // Format documents response
+    const documents = docsResult.rows.map(doc => ({
+      id: doc.id,
+      title: doc.title,
+      version: doc.version,
+      summary: doc.summary,
+      createdAt: doc.created_at,
+      updatedAt: doc.updated_at
+    }));
+
+    res.json({
+      data: documents,
+      meta: {
+        total: Number(countResult.rows[0].count),
+        page: pageNumber,
+        limit: limitNumber
+      }
+    });
+  } catch (error) {
+    console.error('Get API docs error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.get('/api/api-docs/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      'SELECT * FROM api_documents WHERE id = $1',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Documentación no encontrada' });
+    }
+
+    const document = {
+      id: result.rows[0].id,
+      title: result.rows[0].title,
+      version: result.rows[0].version,
+      summary: result.rows[0].summary,
+      content: result.rows[0].content,
+      createdAt: result.rows[0].created_at,
+      updatedAt: result.rows[0].updated_at
+    };
+
+    res.json(document);
+  } catch (error) {
+    console.error('Get API doc error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.post('/api/api-docs', authenticateToken, requireAdmin, async (req: express.Request & { user?: JwtPayload }, res) => {
+  try {
+    const { title, version, summary, content } = req.body;
+
+    if (!title || !version || !summary || !content) {
+      return res.status(400).json({
+        message: 'Todos los campos son requeridos: title, version, summary, content'
+      });
+    }
+
+    // Check for duplicate title+version
+    const existingDoc = await pool.query(
+      'SELECT id FROM api_documents WHERE title = $1 AND version = $2',
+      [title, version]
+    );
+
+    if (existingDoc.rows.length > 0) {
+      return res.status(409).json({
+        message: 'Ya existe una documentación con este título y versión'
+      });
+    }
+
+    // Create API document
+    const result = await pool.query(
+      `INSERT INTO api_documents (title, version, summary, content, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, NOW(), NOW())
+       RETURNING *`,
+      [title, version, summary, content]
+    );
+
+    const document = {
+      id: result.rows[0].id,
+      title: result.rows[0].title,
+      version: result.rows[0].version,
+      summary: result.rows[0].summary,
+      content: result.rows[0].content,
+      createdAt: result.rows[0].created_at,
+      updatedAt: result.rows[0].updated_at
+    };
+
+    res.status(201).json(document);
+  } catch (error) {
+    console.error('Create API doc error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.put('/api/api-docs/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, version, summary, content } = req.body;
+
+    // Check if document exists
+    const existingDoc = await pool.query(
+      'SELECT id, title, version FROM api_documents WHERE id = $1',
+      [id]
+    );
+
+    if (existingDoc.rows.length === 0) {
+      return res.status(404).json({ message: 'Documentación no encontrada' });
+    }
+
+    // Check for duplicate title+version (if changed)
+    if (title && version) {
+      const duplicateCheck = await pool.query(
+        'SELECT id FROM api_documents WHERE title = $1 AND version = $2 AND id != $3',
+        [title, version, id]
+      );
+
+      if (duplicateCheck.rows.length > 0) {
+        return res.status(409).json({
+          message: 'Ya existe una documentación con este título y versión'
+        });
+      }
+    }
+
+    const updates: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    if (title) {
+      updates.push(`title = $${paramIndex++}`);
+      params.push(title);
+    }
+
+    if (version) {
+      updates.push(`version = $${paramIndex++}`);
+      params.push(version);
+    }
+
+    if (summary !== undefined) {
+      updates.push(`summary = $${paramIndex++}`);
+      params.push(summary);
+    }
+
+    if (content !== undefined) {
+      updates.push(`content = $${paramIndex++}`);
+      params.push(content);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ message: 'No valid fields to update' });
+    }
+
+    updates.push(`updated_at = NOW()`);
+    params.push(id); // For WHERE clause
+
+    const result = await pool.query(
+      `UPDATE api_documents SET ${updates.join(', ')} WHERE id = $${paramIndex}
+       RETURNING *`,
+      params
+    );
+
+    const document = {
+      id: result.rows[0].id,
+      title: result.rows[0].title,
+      version: result.rows[0].version,
+      summary: result.rows[0].summary,
+      content: result.rows[0].content,
+      createdAt: result.rows[0].created_at,
+      updatedAt: result.rows[0].updated_at
+    };
+
+    res.json(document);
+  } catch (error) {
+    console.error('Update API doc error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.delete('/api/api-docs/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if document exists
+    const existingDoc = await pool.query(
+      'SELECT id FROM api_documents WHERE id = $1',
+      [id]
+    );
+
+    if (existingDoc.rows.length === 0) {
+      return res.status(404).json({ message: 'Documentación no encontrada' });
+    }
+
+    await pool.query('DELETE FROM api_documents WHERE id = $1', [id]);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete API doc error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
