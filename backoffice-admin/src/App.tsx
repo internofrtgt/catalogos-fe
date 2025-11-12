@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { CircularProgress, Box } from '@mui/material';
 import { ProtectedRoute } from './components/routing/ProtectedRoute';
+import { SessionExpirationWarning } from './components/SessionExpirationWarning';
 import { CatalogsPage } from './pages/catalogs/CatalogsPage';
 import { CatalogEntriesPage } from './pages/catalogs/CatalogEntriesPage';
 import { ImportCatalogPage } from './pages/catalogs/ImportCatalogPage';
@@ -33,6 +34,7 @@ function FullScreenLoader() {
 export default function App() {
   return (
     <Suspense fallback={<FullScreenLoader />}>
+      <SessionExpirationWarning />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 

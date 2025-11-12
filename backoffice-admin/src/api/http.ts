@@ -24,6 +24,20 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
+// Interceptor para manejar errores 401 (token expirado)
+http.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expirado o inválido, limpiar y redirigir al login
+      localStorage.removeItem('backoffice-auth');
+      localStorage.removeItem('backoffice-last-activity');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const uploadClient = axios.create({
   baseURL: API_BASE_URL,
 });
@@ -34,3 +48,17 @@ uploadClient.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Interceptor para manejar errores 401 en uploadClient
+uploadClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expirado o inválido, limpiar y redirigir al login
+      localStorage.removeItem('backoffice-auth');
+      localStorage.removeItem('backoffice-last-activity');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
