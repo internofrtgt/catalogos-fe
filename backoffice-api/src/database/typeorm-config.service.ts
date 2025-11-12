@@ -20,6 +20,37 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
   createTypeOrmOptions(): TypeOrmModuleOptions {
     const isProduction = this.configService.get('NODE_ENV') === 'production';
 
+    // Try to use DATABASE_URL first (created by Vercel Neon)
+    const databaseUrl = this.configService.get<string>('DATABASE_URL');
+
+    if (databaseUrl) {
+      console.log('Using DATABASE_URL from Vercel Neon');
+      return {
+        type: 'postgres',
+        url: databaseUrl,
+        entities: [
+          ...catalogEntitySchemas,
+          User,
+          Province,
+          Canton,
+          District,
+          Barrio,
+          ApiDocument,
+        ],
+        synchronize:
+          this.configService.get<string>('TYPEORM_SYNCHRONIZE', 'false') ===
+          'true',
+        migrationsRun:
+          this.configService.get<string>('TYPEORM_RUN_MIGRATIONS', 'false') ===
+          'true',
+        migrations: [join(__dirname, 'migrations/*{.ts,.js}')],
+        logging: this.resolveLogging(isProduction),
+        ssl: { rejectUnauthorized: false },
+      };
+    }
+
+    // Fallback to individual variables
+    console.log('Using individual database variables');
     return {
       type: 'postgres',
       host: this.configService.get<string>('DATABASE_HOST', 'localhost'),

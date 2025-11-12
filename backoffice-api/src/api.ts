@@ -7,9 +7,14 @@ let app: any;
 
 async function bootstrap() {
   if (!app) {
+    // Debug environment variables
+    console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+    console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
+
     app = await NestFactory.create(AppModule, new ExpressAdapter(), {
       cors: true,
-      logger: ['error', 'warn']
+      logger: ['error', 'warn', 'log'] // Enable log to see debug messages
     });
 
     app.useGlobalPipes(
