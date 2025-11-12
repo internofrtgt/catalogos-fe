@@ -3720,33 +3720,43 @@ app.post('/api/geography/:table/import', authenticateToken, requireAdmin, upload
         };
       };
     } else if (table === 'districts') {
-      requiredColumns = ['province_code', 'canton_code', 'district_code', 'district_name'];
+      requiredColumns = ['provincia', 'codigo_provincia', 'canton', 'codigo_canton', 'distrito', 'codigo_distrito'];
       validationFunction = (row: any, i: number) => {
-        const province_code = row.province_code || row.codigo_provincia || row.codigoProvincia || row.provinceCode || row.codigo;
-        const canton_code = row.canton_code || row.codigo_canton || row.codigoCanton || row.cantonCode;
-        const district_code = row.district_code || row.codigo_distrito || row.codigoDistrito || row.districtCode;
-        const district_name = row.district_name || row.nombre || row.nombre_distrito || row.districtName;
+        const provincia = row.provincia || row.province || row.provincia_nombre || row.provinciaNombre || row.province_name || row.nombre_provincia;
+        const codigo_provincia = row.codigo_provincia || row.codigoProvincia || row.provinceCode || row.province_code || row.codigo;
+        const canton = row.canton || row.canton_nombre || row.cantonNombre || row.canton_name || row.nombre_canton;
+        const codigo_canton = row.codigo_canton || row.codigoCanton || row.cantonCode || row.canton_code;
+        const distrito = row.distrito || row.district || row.nombre || row.nombre_distrito || row.districtName || row.district_name;
+        const codigo_distrito = row.codigo_distrito || row.codigoDistrito || row.districtCode || row.district_code;
 
-        if (!province_code || province_code.toString().trim() === '') {
-          return { isValid: false, error: `Row ${i + 2}: province_code is required`, data: null };
+        if (!provincia || provincia.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: provincia is required`, data: null };
         }
-        if (!canton_code || canton_code.toString().trim() === '') {
-          return { isValid: false, error: `Row ${i + 2}: canton_code is required`, data: null };
+        if (!codigo_provincia || codigo_provincia.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: codigo_provincia is required`, data: null };
         }
-        if (!district_code || district_code.toString().trim() === '') {
-          return { isValid: false, error: `Row ${i + 2}: district_code is required`, data: null };
+        if (!canton || canton.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: canton is required`, data: null };
         }
-        if (!district_name || district_name.toString().trim() === '') {
-          return { isValid: false, error: `Row ${i + 2}: district_name is required`, data: null };
+        if (!codigo_canton || codigo_canton.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: codigo_canton is required`, data: null };
+        }
+        if (!distrito || distrito.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: distrito is required`, data: null };
+        }
+        if (!codigo_distrito || codigo_distrito.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: codigo_distrito is required`, data: null };
         }
 
         return {
           isValid: true,
           data: {
-            province_code: parseInt(province_code.toString().trim()),
-            canton_code: canton_code.toString().trim(),
-            district_code: district_code.toString().trim(),
-            district_name: district_name.toString().trim()
+            provincia: provincia.toString().trim(),
+            codigo_provincia: parseInt(codigo_provincia.toString().trim()),
+            canton: canton.toString().trim(),
+            codigo_canton: codigo_canton.toString().trim(),
+            distrito: distrito.toString().trim(),
+            codigo_distrito: codigo_distrito.toString().trim()
           }
         };
       };
@@ -3813,8 +3823,8 @@ app.post('/api/geography/:table/import', authenticateToken, requireAdmin, upload
           checkQuery = `SELECT id FROM ${tableName} WHERE codigo_provincia = $1 AND codigo_canton = $2`;
           checkParams = [data.codigo_provincia, data.codigo_canton];
         } else if (table === 'districts') {
-          checkQuery = `SELECT id FROM ${tableName} WHERE province_code = $1 AND canton_code = $2 AND district_code = $3`;
-          checkParams = [data.province_code, data.canton_code, data.district_code];
+          checkQuery = `SELECT id FROM ${tableName} WHERE codigo_provincia = $1 AND codigo_canton = $2 AND codigo_distrito = $3`;
+          checkParams = [data.codigo_provincia, data.codigo_canton, data.codigo_distrito];
         } else {
           checkQuery = `SELECT id FROM ${tableName} WHERE province_code = $1 AND canton_code = $2 AND district_code = $3 AND barrio_name = $4`;
           checkParams = [data.province_code, data.canton_code, data.district_code, data.barrio_name];
