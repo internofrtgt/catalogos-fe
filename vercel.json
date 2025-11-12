@@ -13,14 +13,14 @@
       }
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/backoffice-api/src/api.ts"
+      "source": "/api/(.*)",
+      "destination": "/backoffice-api/src/api.ts"
     },
     {
-      "src": "/(.*)",
-      "dest": "/backoffice-admin/$1"
+      "source": "/(.*)",
+      "destination": "/backoffice-admin/$1"
     }
   ]
 }
