@@ -252,7 +252,7 @@ const catalogDefinitions: any[] = [
     label: 'Actividades Económicas',
     tableName: 'actividades_economicas',
     fields: [
-      { name: 'codigo', type: 'string', required: true, length: 50 },
+      { name: 'codigo', type: 'string', required: true, length: 255 },
       { name: 'nombre', type: 'string', required: true },
     ],
     uniqueBy: ['codigo'],
