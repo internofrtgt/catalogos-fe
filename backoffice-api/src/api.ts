@@ -4,8 +4,25 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import xlsx from 'xlsx';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
 
 const app = express();
+
+// Enable CORS for all routes
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 app.use(express.json());
 
 // Setup multer for file uploads
@@ -48,6 +65,54 @@ pool.query('SELECT NOW()')
 app.get('/api/health', (req, res) => {
   res.json({ status: 'API is working', timestamp: new Date().toISOString() });
 });
+
+// Swagger configuration
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'BackOffice Catalogos API',
+      version: '1.0.0',
+      description: 'API para gestión de catálogos maestros, ubicaciones geográficas y cargas masivas',
+    },
+    servers: [
+      {
+        url: 'https://catalogos-fe.vercel.app',
+        description: 'Production server',
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
+  },
+  apis: ['./src/api.ts'], // Path to the API docs
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// API documentation endpoint
+/**
+ * @swagger
+ * /api/docs:
+ *   get:
+ *     summary: API Documentation
+ *     description: Returns the Swagger UI documentation for the API
+ *     responses:
+ *       200:
+ *         description: Swagger UI documentation
+ */
 
 // Login endpoint
 app.post('/api/auth/login', async (req, res) => {
@@ -2482,6 +2547,99 @@ app.get('/api/geography/districts', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/geography/barrios:
+ *   get:
+ *     summary: Get all barrios with pagination and filtering
+ *     description: Retrieve a paginated list of barrios with optional search and filtering by province, canton, or district
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term to filter by barrio, distrito, canton, or provincia
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Number of items per page
+ *       - in: query
+ *         name: provinceCode
+ *         schema:
+ *           type: integer
+ *         description: Filter by province code (codigo_provincia)
+ *       - in: query
+ *         name: cantonCode
+ *         schema:
+ *           type: string
+ *         description: Filter by canton code (codigo_canton)
+ *       - in: query
+ *         name: districtName
+ *         schema:
+ *           type: string
+ *         description: Filter by district name (distrito)
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved barrios
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         description: Unique identifier
+ *                       provincia:
+ *                         type: string
+ *                         description: Province name
+ *                       codigoProvincia:
+ *                         type: integer
+ *                         description: Province code
+ *                       canton:
+ *                         type: string
+ *                         description: Canton name
+ *                       codigoCanton:
+ *                         type: string
+ *                         description: Canton code
+ *                       distrito:
+ *                         type: string
+ *                         description: District name
+ *                       codigoDistrito:
+ *                         type: string
+ *                         description: District code
+ *                       barrio:
+ *                         type: string
+ *                         description: Barrio name
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+
 // General barrios endpoint (all barrios)
 app.get('/api/geography/barrios', authenticateToken, async (req, res) => {
   try {
@@ -3639,6 +3797,72 @@ app.post('/api/api-docs/seed', authenticateToken, requireAdmin, async (req, res)
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+/**
+ * @swagger
+ * /api/geography/{table}/import:
+ *   post:
+ *     summary: Import geography data from Excel file
+ *     description: Import geographical data (provinces, cantons, districts, or barrios) from an Excel file
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: table
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [provinces, cantons, districts, barrios]
+ *         description: The type of geographical data to import
+ *       - in: formData
+ *         name: file
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: binary
+ *         description: Excel file (.xlsx or .xls) containing the geographical data
+ *       - in: formData
+ *         name: mode
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [append, replace]
+ *           default: append
+ *         description: Import mode: 'append' to add to existing data, 'replace' to replace all data
+ *     responses:
+ *       200:
+ *         description: Import completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 summary:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     inserted:
+ *                       type: integer
+ *                     skipped:
+ *                       type: integer
+ *                     errors:
+ *                       type: integer
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       400:
+ *         description: Bad request - Invalid file or table name
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin role required
+ *       500:
+ *         description: Internal server error
+ */
 
 // Import geography data from Excel
 app.post('/api/geography/:table/import', authenticateToken, requireAdmin, upload.single('file'), async (req, res) => {
