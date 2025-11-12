@@ -1,6 +1,7 @@
 import { Controller, Get, Post } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DataSource } from 'typeorm';
 import { User, UserRole } from '../users/user.entity';
 import * as bcrypt from 'bcrypt';
 
@@ -8,7 +9,7 @@ import * as bcrypt from 'bcrypt';
 export class SetupController {
   constructor(
     private configService: ConfigService,
-    @Inject('DataSource') private dataSource: any
+    @Inject(DataSource) private dataSource: DataSource
   ) {}
 
   @Post('migrate')

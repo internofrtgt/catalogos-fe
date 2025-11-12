@@ -7,7 +7,6 @@ import { TypeOrmConfigService } from './database/typeorm-config.service';
 import { GeographyModule } from './geography/geography.module';
 import { UsersModule } from './users/users.module';
 import { ApiDocsModule } from './api-docs/api-docs.module';
-import { SetupController } from './database/setup.controller';
 
 @Module({
   imports: [
@@ -25,6 +24,5 @@ import { SetupController } from './database/setup.controller';
     GeographyModule,
   ],
   providers: [TypeOrmConfigService],
-  controllers: [SetupController],
 })
 export class AppModule {}
