@@ -1342,7 +1342,7 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
 
     // Process each row
     for (let i = 0; i < jsonData.length; i++) {
-      const row = jsonData[i];
+      const row = jsonData[i] as any;
 
       try {
         // Extract values with flexible column name matching
@@ -1351,7 +1351,7 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
 
         // Validate required fields
         if (!descripcion || descripcion.toString().trim() === '') {
-          errors.push(`Row ${i + 2}: descripcion is required`);
+          (errors as string[]).push(`Row ${i + 2}: descripcion is required`);
           skippedCount++;
           continue;
         }
@@ -1360,7 +1360,7 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
 
         // Handle codigo (optional for some catalogs, but required for tipos-documento)
         if (catalogKey === 'tipos-documento' && (!codigo || codigo.toString().trim() === '')) {
-          errors.push(`Row ${i + 2}: codigo is required for tipos-documento`);
+          (errors as string[]).push(`Row ${i + 2}: codigo is required for tipos-documento`);
           skippedCount++;
           continue;
         }
@@ -1403,14 +1403,14 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
         await pool.query(insertQuery, insertValues);
         insertedCount++;
 
-      } catch (rowError) {
+      } catch (rowError: any) {
         console.error(`Error processing row ${i + 2}:`, rowError);
-        errors.push(`Row ${i + 2}: ${rowError.message}`);
+        (errors as string[]).push(`Row ${i + 2}: ${rowError.message}`);
         skippedCount++;
       }
     }
 
-    const response = {
+    const response: any = {
       message: 'Import completed',
       summary: {
         total: jsonData.length,
