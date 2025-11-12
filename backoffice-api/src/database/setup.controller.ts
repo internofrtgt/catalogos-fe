@@ -2,7 +2,7 @@ import { Controller, Get, Post } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { AppDataSource } from './typeorm.datasource';
 import { ConfigService } from '@nestjs/config';
-import { User } from '../users/user.entity';
+import { User, UserRole } from '../users/user.entity';
 import * as bcrypt from 'bcrypt';
 
 @Controller('api/setup')
@@ -63,8 +63,8 @@ export class SetupController {
       const hashedPassword = await bcrypt.hash(password, 10);
       const adminUser = userRepository.create({
         username: username.toLowerCase(),
-        password: hashedPassword,
-        role: 'ADMIN',
+        passwordHash: hashedPassword,
+        role: UserRole.ADMIN,
         isActive: true
       });
 
@@ -101,7 +101,7 @@ export class SetupController {
       // Check admin user
       const userRepository = AppDataSource.getRepository(User);
       const adminUser = await userRepository.findOne({
-        where: { role: 'ADMIN' }
+        where: { role: UserRole.ADMIN }
       });
 
       return {
