@@ -13,40 +13,40 @@ import { Canton } from './canton.entity';
 import { Barrio } from './barrio.entity';
 
 @Entity({ name: 'distritos' })
-@Index('distritos_province_canton_idx', ['provinceCode', 'cantonCode'])
+@Index('distritos_codigo_provincia_codigo_canton_idx', ['codigoProvincia', 'codigoCanton'])
 @Index(
-  'distritos_province_canton_codigo_uq',
-  ['provinceCode', 'cantonCode', 'codigo'],
+  'distritos_codigo_provincia_codigo_canton_codigo_distrito_uq',
+  ['codigoProvincia', 'codigoCanton', 'codigoDistrito'],
   { unique: true },
 )
 export class District {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ name: 'provincia_nombre', length: 120 })
-  provinciaNombre!: string;
+  @Column({ name: 'provincia', length: 120 })
+  provincia!: string;
 
-  @Column({ name: 'province_code', type: 'int' })
-  provinceCode!: number;
+  @Column({ name: 'codigo_provincia', type: 'int' })
+  codigoProvincia!: number;
 
-  @Column({ name: 'canton_nombre', length: 120 })
-  cantonNombre!: string;
+  @Column({ name: 'canton', length: 120 })
+  canton!: string;
 
-  @Column({ name: 'canton_code', type: 'int' })
-  cantonCode!: number;
+  @Column({ name: 'codigo_canton', length: 50 })
+  codigoCanton!: string;
 
-  @Column({ length: 120 })
-  nombre!: string;
+  @Column({ name: 'distrito', length: 120 })
+  distrito!: string;
 
-  @Column({ type: 'int' })
-  codigo!: number;
+  @Column({ name: 'codigo_distrito', length: 50 })
+  codigoDistrito!: string;
 
   @ManyToOne(() => Canton, (canton) => canton.distritos, {
     onDelete: 'CASCADE',
   })
   @JoinColumn([
-    { name: 'province_code', referencedColumnName: 'provinceCode' },
-    { name: 'canton_code', referencedColumnName: 'codigo' },
+    { name: 'codigo_provincia', referencedColumnName: 'codigoProvincia' },
+    { name: 'codigo_canton', referencedColumnName: 'codigoCanton' },
   ])
   canton!: Canton;
 

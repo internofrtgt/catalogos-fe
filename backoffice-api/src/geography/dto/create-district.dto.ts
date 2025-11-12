@@ -1,6 +1,5 @@
 import {
   IsInt,
-  IsPositive,
   IsString,
   MaxLength,
   Min,
@@ -9,25 +8,25 @@ import {
 export class CreateDistrictDto {
   @IsString()
   @MaxLength(120)
-  provinciaNombre!: string;
+  provincia!: string;
 
   @IsInt()
   @Min(1)
-  provinceCode!: number;
+  codigoProvincia!: number;
 
   @IsString()
   @MaxLength(120)
-  cantonNombre!: string;
+  canton!: string;
 
-  @IsInt()
-  @Min(1)
-  cantonCode!: number;
+  @IsString()
+  @MaxLength(50)
+  codigoCanton!: string;
 
   @IsString()
   @MaxLength(120)
-  nombre!: string;
+  distrito!: string;
 
-  @IsInt()
-  @IsPositive()
-  codigo!: number;
+  @IsString()
+  @MaxLength(50)
+  codigoDistrito!: string;
 }

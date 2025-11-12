@@ -1,6 +1,5 @@
 import {
   IsInt,
-  IsPositive,
   IsString,
   MaxLength,
   Min,
@@ -9,17 +8,17 @@ import {
 export class CreateCantonDto {
   @IsString()
   @MaxLength(120)
-  provinciaNombre!: string;
+  provincia!: string;
 
   @IsInt()
   @Min(1)
-  provinceCode!: number;
+  codigoProvincia!: number;
 
   @IsString()
   @MaxLength(120)
-  nombre!: string;
+  canton!: string;
 
-  @IsInt()
-  @IsPositive()
-  codigo!: number;
+  @IsString()
+  @MaxLength(50)
+  codigoCanton!: string;
 }

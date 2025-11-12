@@ -7,5 +7,5 @@ export class CantonQueryDto extends CatalogQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  provinceCode?: number;
+  codigoProvincia?: number;
 }

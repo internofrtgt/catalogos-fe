@@ -7,18 +7,17 @@ export class BarrioQueryDto extends CatalogQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  provinceCode?: number;
+  codigoProvincia?: number;
 
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  cantonCode?: number;
+  @IsString()
+  @MaxLength(50)
+  codigoCanton?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(120)
-  districtName?: string;
+  distrito?: string;
 
   @IsOptional()
   @IsString()

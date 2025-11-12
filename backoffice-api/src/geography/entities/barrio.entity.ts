@@ -11,10 +11,10 @@ import {
 import { District } from './district.entity';
 
 @Entity({ name: 'barrios' })
-@Index('barrios_province_canton_idx', ['provinceCode', 'cantonCode'])
+@Index('barrios_codigo_provincia_codigo_canton_idx', ['codigoProvincia', 'codigoCanton'])
 @Index(
-  'barrios_province_canton_district_nombre_uq',
-  ['provinceCode', 'cantonCode', 'districtName', 'nombre'],
+  'barrios_codigo_provincia_codigo_canton_codigo_distrito_barrio_uq',
+  ['codigoProvincia', 'codigoCanton', 'codigoDistrito', 'barrio'],
   { unique: true },
 )
 export class Barrio {
@@ -24,35 +24,35 @@ export class Barrio {
   @Column({ name: 'province_key', length: 80 })
   provinceKey!: string;
 
-  @Column({ name: 'provincia_nombre', length: 120 })
-  provinciaNombre!: string;
+  @Column({ name: 'provincia', length: 120 })
+  provincia!: string;
 
-  @Column({ name: 'province_code', type: 'int' })
-  provinceCode!: number;
+  @Column({ name: 'codigo_provincia', type: 'int' })
+  codigoProvincia!: number;
 
-  @Column({ name: 'canton_nombre', length: 120 })
-  cantonNombre!: string;
+  @Column({ name: 'canton', length: 120 })
+  canton!: string;
 
-  @Column({ name: 'canton_code', type: 'int' })
-  cantonCode!: number;
+  @Column({ name: 'codigo_canton', length: 50 })
+  codigoCanton!: string;
 
-  @Column({ name: 'district_name', length: 120 })
-  districtName!: string;
+  @Column({ name: 'distrito', length: 120 })
+  distrito!: string;
 
-  @Column({ name: 'district_code', type: 'int', nullable: true })
-  districtCode!: number | null;
+  @Column({ name: 'codigo_distrito', length: 50 })
+  codigoDistrito!: string;
 
-  @Column({ length: 120 })
-  nombre!: string;
+  @Column({ name: 'barrio', length: 120 })
+  barrio!: string;
 
   @ManyToOne(() => District, (district) => district.barrios, {
     onDelete: 'SET NULL',
     nullable: true,
   })
   @JoinColumn([
-    { name: 'province_code', referencedColumnName: 'provinceCode' },
-    { name: 'canton_code', referencedColumnName: 'cantonCode' },
-    { name: 'district_code', referencedColumnName: 'codigo' },
+    { name: 'codigo_provincia', referencedColumnName: 'codigoProvincia' },
+    { name: 'codigo_canton', referencedColumnName: 'codigoCanton' },
+    { name: 'codigo_distrito', referencedColumnName: 'codigoDistrito' },
   ])
   distrito!: District | null;
 

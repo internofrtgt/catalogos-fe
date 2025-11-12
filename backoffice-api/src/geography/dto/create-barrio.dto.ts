@@ -1,32 +1,31 @@
-import { IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsInt, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreateBarrioDto {
   @IsString()
   @MaxLength(120)
-  provinciaNombre!: string;
+  provincia!: string;
 
   @IsInt()
   @Min(1)
-  provinceCode!: number;
+  codigoProvincia!: number;
 
   @IsString()
   @MaxLength(120)
-  cantonNombre!: string;
+  canton!: string;
 
-  @IsInt()
-  @Min(1)
-  cantonCode!: number;
+  @IsString()
+  @MaxLength(50)
+  codigoCanton!: string;
 
   @IsString()
   @MaxLength(120)
-  districtName!: string;
+  distrito!: string;
 
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  districtCode?: number | null;
+  @IsString()
+  @MaxLength(50)
+  codigoDistrito!: string;
 
   @IsString()
   @MaxLength(120)
-  nombre!: string;
+  barrio!: string;
 }

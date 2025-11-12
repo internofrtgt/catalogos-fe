@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { CatalogQueryDto } from '../../catalogs/dto/catalog-query.dto';
 
 export class DistrictQueryDto extends CatalogQueryDto {
@@ -7,11 +7,10 @@ export class DistrictQueryDto extends CatalogQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  provinceCode?: number;
+  codigoProvincia?: number;
 
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  cantonCode?: number;
+  @IsString()
+  @MaxLength(50)
+  codigoCanton?: string;
 }
