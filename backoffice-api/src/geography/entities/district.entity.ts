@@ -30,13 +30,13 @@ export class District {
   codigoProvincia!: number;
 
   @Column({ name: 'canton', length: 120 })
-  canton!: string;
+  cantonName!: string;
 
   @Column({ name: 'codigo_canton', length: 50 })
   codigoCanton!: string;
 
   @Column({ name: 'distrito', length: 120 })
-  distrito!: string;
+  distritoName!: string;
 
   @Column({ name: 'codigo_distrito', length: 50 })
   codigoDistrito!: string;

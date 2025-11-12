@@ -12,7 +12,8 @@
       "Bash(npx tsc:*)",
       "Bash(node:*)",
       "Bash(npm run vercel-build)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm run build)"
     ],
     "deny": [],
     "ask": []

@@ -2,6 +2,15 @@
   "version": 2,
   "builds": [
     {
+      "src": "backoffice-api/api-simple.ts",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": "backoffice-api/**",
+        "excludeFiles": "backoffice-api/src/database/migrations/**",
+        "maxLambdaSize": "50mb"
+      }
+    },
+    {
       "src": "backoffice-api/src/api.ts",
       "use": "@vercel/node",
       "config": {
@@ -19,6 +28,14 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/health",
+      "destination": "/backoffice-api/api-simple.ts"
+    },
+    {
+      "source": "/api/geography/status",
+      "destination": "/backoffice-api/api-simple.ts"
+    },
     {
       "source": "/api/(.*)",
       "destination": "/backoffice-api/src/api.ts"

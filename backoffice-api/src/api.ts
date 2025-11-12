@@ -4,8 +4,6 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import xlsx from 'xlsx';
-import swaggerUi from 'swagger-ui-express';
-import swaggerJsdoc from 'swagger-jsdoc';
 
 const app = express();
 
@@ -66,53 +64,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'API is working', timestamp: new Date().toISOString() });
 });
 
-// Swagger configuration
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'BackOffice Catalogos API',
-      version: '1.0.0',
-      description: 'API para gestión de catálogos maestros, ubicaciones geográficas y cargas masivas',
-    },
-    servers: [
-      {
-        url: 'https://catalogos-fe.vercel.app',
-        description: 'Production server',
-      },
-    ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-        },
-      },
-    },
-    security: [
-      {
-        bearerAuth: [],
-      },
-    ],
-  },
-  apis: ['./src/api.ts'], // Path to the API docs
-};
 
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-// API documentation endpoint
-/**
- * @swagger
- * /api/docs:
- *   get:
- *     summary: API Documentation
- *     description: Returns the Swagger UI documentation for the API
- *     responses:
- *       200:
- *         description: Swagger UI documentation
- */
 
 // Login endpoint
 app.post('/api/auth/login', async (req, res) => {
