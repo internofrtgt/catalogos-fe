@@ -1503,6 +1503,88 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
   }
 });
 
+// Update table structure for catalog fields
+app.post('/api/catalogs/:catalogKey/update-schema', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { catalogKey } = req.params;
+
+    const definition = catalogDefinitionsMap.get(catalogKey);
+    if (!definition) {
+      return res.status(404).json({ message: 'Catalog not found' });
+    }
+
+    const tableName = definition.tableName;
+
+    // Get current table structure
+    const tableStructure = await pool.query(`
+      SELECT column_name, data_type, numeric_precision, numeric_scale, character_maximum_length
+      FROM information_schema.columns
+      WHERE table_name = $1 AND table_schema = 'public'
+      ORDER BY ordinal_position
+    `, [tableName]);
+
+    console.log(`Current table structure for ${tableName}:`, tableStructure.rows);
+
+    // Check if we need to update codigo column for actividades-economicas
+    if (catalogKey === 'actividades-economicas') {
+      const codigoColumn = tableStructure.rows.find(col => col.column_name === 'codigo');
+
+      if (codigoColumn && codigoColumn.data_type === 'numeric') {
+        console.log('Altering actividades_economicas.codigo from numeric to varchar...');
+
+        // Alter the column from numeric to varchar
+        await pool.query(`
+          ALTER TABLE ${tableName}
+          ALTER COLUMN codigo TYPE VARCHAR(50) USING codigo::VARCHAR(50)
+        `);
+
+        console.log('Successfully altered codigo column to VARCHAR(50)');
+
+        res.json({
+          message: 'Schema updated successfully',
+          catalogKey,
+          tableName,
+          changes: [
+            {
+              column: 'codigo',
+              from: `${codigoColumn.data_type}(${codigoColumn.numeric_precision},${codigoColumn.numeric_scale})`,
+              to: 'VARCHAR(50)'
+            }
+          ]
+        });
+      } else if (codigoColumn && codigoColumn.data_type === 'character varying') {
+        res.json({
+          message: 'Schema already up to date',
+          catalogKey,
+          tableName,
+          currentType: `VARCHAR(${codigoColumn.character_maximum_length})`
+        });
+      } else {
+        res.status(400).json({
+          message: 'codigo column not found in table',
+          catalogKey,
+          tableName,
+          existingColumns: tableStructure.rows.map(col => col.column_name)
+        });
+      }
+    } else {
+      res.json({
+        message: 'No schema updates needed for this catalog',
+        catalogKey,
+        tableName,
+        currentStructure: tableStructure.rows
+      });
+    }
+
+  } catch (error) {
+    console.error('Update schema error:', error);
+    res.status(500).json({
+      message: 'Internal server error during schema update',
+      error: error.message
+    });
+  }
+});
+
 // Geography endpoints
 app.get('/api/geography/provinces', authenticateToken, async (req, res) => {
   try {
