@@ -2037,9 +2037,12 @@ app.post('/api/schemas/update-all', authenticateToken, requireAdmin, async (req,
         key: 'distritos',
         tableName: 'distritos',
         fields: [
-          { name: 'province_code', type: 'int', required: true },
-          { name: 'canton_code', type: 'string', required: true, length: 1024 },
-          { name: 'codigo', type: 'string', required: true, length: 50 }
+          { name: 'provincia', type: 'string', required: true, length: 120 },
+          { name: 'codigo_provincia', type: 'int', required: true },
+          { name: 'canton', type: 'string', required: true, length: 120 },
+          { name: 'codigo_canton', type: 'string', required: true, length: 50 },
+          { name: 'distrito', type: 'string', required: true, length: 120 },
+          { name: 'codigo_distrito', type: 'string', required: true, length: 50 }
         ]
       },
       {
@@ -4063,6 +4066,132 @@ app.post('/api/schemas/transform-cantones', authenticateToken, requireAdmin, asy
 
   } catch (error) {
     console.error('Cantones transformation error:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
+// Special endpoint to transform distritos table structure
+app.post('/api/schemas/transform-distritos', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    console.log('Starting distritos table transformation...');
+
+    const operations = [
+      // 1. Add new columns if they don't exist
+      {
+        description: 'Add new columns if they don\'t exist',
+        sql: `
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'distritos' AND column_name = 'provincia') THEN
+              ALTER TABLE distritos ADD COLUMN provincia VARCHAR(120);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'distritos' AND column_name = 'codigo_provincia') THEN
+              ALTER TABLE distritos ADD COLUMN codigo_provincia INTEGER;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'distritos' AND column_name = 'canton') THEN
+              ALTER TABLE distritos ADD COLUMN canton VARCHAR(120);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'distritos' AND column_name = 'codigo_canton') THEN
+              ALTER TABLE distritos ADD COLUMN codigo_canton VARCHAR(50);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'distritos' AND column_name = 'distrito') THEN
+              ALTER TABLE distritos ADD COLUMN distrito VARCHAR(120);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'distritos' AND column_name = 'codigo_distrito') THEN
+              ALTER TABLE distritos ADD COLUMN codigo_distrito VARCHAR(50);
+            END IF;
+          END $$;
+        `
+      },
+
+      // 2. Copy data from old columns to new columns
+      {
+        description: 'Copy data from old columns to new columns',
+        sql: `
+          UPDATE distritos SET
+            provincia = COALESCE(provincia_nombre, 'Unknown'),
+            codigo_provincia = COALESCE(province_code, 0),
+            canton = COALESCE(canton_nombre, 'Unknown'),
+            codigo_canton = COALESCE(canton_code, '00'),
+            distrito = COALESCE(nombre, 'Unknown'),
+            codigo_distrito = COALESCE(codigo, '00');
+        `
+      },
+
+      // 3. Make new columns NOT NULL after data is copied
+      {
+        description: 'Set new columns as NOT NULL',
+        sql: `
+          ALTER TABLE distritos
+            ALTER COLUMN provincia SET NOT NULL,
+            ALTER COLUMN codigo_provincia SET NOT NULL,
+            ALTER COLUMN canton SET NOT NULL,
+            ALTER COLUMN codigo_canton SET NOT NULL,
+            ALTER COLUMN distrito SET NOT NULL,
+            ALTER COLUMN codigo_distrito SET NOT NULL;
+        `
+      },
+
+      // 4. Create unique constraint on new columns
+      {
+        description: 'Add unique constraint on codigo_provincia, codigo_canton, codigo_distrito',
+        sql: `
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                          WHERE table_name = 'distritos' AND constraint_name = 'distritos_codigo_provincia_codigo_canton_codigo_distrito_key') THEN
+              ALTER TABLE distritos ADD CONSTRAINT distritos_codigo_provincia_codigo_canton_codigo_distrito_key
+                UNIQUE (codigo_provincia, codigo_canton, codigo_distrito);
+            END IF;
+          END $$;
+        `
+      }
+    ];
+
+    const results: any[] = [];
+
+    for (const operation of operations) {
+      try {
+        console.log(`Executing: ${operation.description}`);
+        await pool.query(operation.sql);
+
+        results.push({
+          description: operation.description,
+          status: 'success'
+        });
+
+        console.log(`✅ Success: ${operation.description}`);
+
+      } catch (error) {
+        console.error(`❌ Error in ${operation.description}:`, error);
+        results.push({
+          description: operation.description,
+          status: 'error',
+          error: error.message
+        });
+      }
+    }
+
+    console.log('Transformation completed. Old columns kept as backup.');
+
+    res.json({
+      message: 'Distritos table transformation completed',
+      operations: results,
+      summary: {
+        total: operations.length,
+        success: results.filter(r => r.status === 'success').length,
+        errors: results.filter(r => r.status === 'error').length
+      },
+      note: 'Old columns (provincia_nombre, province_code, canton_nombre, canton_code, nombre, codigo) have been kept as backup. You can manually drop them if needed.'
+    });
+
+  } catch (error) {
+    console.error('Distritos transformation error:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
