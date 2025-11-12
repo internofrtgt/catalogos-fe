@@ -479,6 +479,20 @@ const catalogDefinitionsMap = new Map(
   catalogDefinitions.map((def) => [def.key, def]),
 );
 
+// Helper function to transform snake_case to camelCase
+function snakeToCamel(snakeStr: string): string {
+  return snakeStr.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+}
+
+// Helper function to transform database row object keys from snake_case to camelCase
+function transformRowKeys(row: any): any {
+  const transformed: any = {};
+  for (const key in row) {
+    transformed[snakeToCamel(key)] = row[key];
+  }
+  return transformed;
+}
+
 // Helper function to create catalog tables
 async function createCatalogTable(definition: any) {
   const columns: string[] = [
@@ -1157,9 +1171,12 @@ app.get('/api/catalogs/:catalogKey', authenticateToken, async (req, res) => {
       pool.query(countQuery, params)
     ]);
 
+    // Transform database row keys from snake_case to camelCase for frontend compatibility
+    const transformedData = itemsResult.rows.map(row => transformRowKeys(row));
+
     // Format response to match original NestJS API structure
     res.json({
-      data: itemsResult.rows,
+      data: transformedData,
       meta: {
         total: Number(countResult.rows[0].count),
         page: pageNumber,
@@ -1190,7 +1207,10 @@ app.get('/api/catalogs/:catalogKey/:id', authenticateToken, async (req, res) => 
       return res.status(404).json({ message: 'Item not found' });
     }
 
-    res.json(result.rows[0]);
+    // Transform database row keys from snake_case to camelCase for frontend compatibility
+    const transformedRow = transformRowKeys(result.rows[0]);
+
+    res.json(transformedRow);
   } catch (error) {
     console.error('Find one catalog item error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -1225,7 +1245,11 @@ app.post('/api/catalogs/:catalogKey', authenticateToken, requireAdmin, async (re
     `;
 
     const result = await pool.query(query, values);
-    res.status(201).json(result.rows[0]);
+
+    // Transform database row keys from snake_case to camelCase for frontend compatibility
+    const transformedRow = transformRowKeys(result.rows[0]);
+
+    res.status(201).json(transformedRow);
   } catch (error) {
     console.error('Create catalog item error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -1268,7 +1292,10 @@ app.put('/api/catalogs/:catalogKey/:id', authenticateToken, requireAdmin, async 
       return res.status(404).json({ message: 'Item not found' });
     }
 
-    res.json(result.rows[0]);
+    // Transform database row keys from snake_case to camelCase for frontend compatibility
+    const transformedRow = transformRowKeys(result.rows[0]);
+
+    res.json(transformedRow);
   } catch (error) {
     console.error('Update catalog item error:', error);
     res.status(500).json({ message: 'Internal server error' });
