@@ -1408,6 +1408,21 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
       }
     }
 
+    // Special validation for codigos-moneda
+    if (catalogKey === 'codigos-moneda') {
+      const hasPais = 'pais' in firstRow || 'Pais' in firstRow || 'país' in firstRow || 'País' in firstRow || 'country' in firstRow || 'Country' in firstRow;
+      const hasMoneda = 'moneda' in firstRow || 'Moneda' in firstRow || 'currency' in firstRow || 'Currency' in firstRow;
+      const hasCodigo = 'codigo' in firstRow || 'código' in firstRow || 'Codigo' in firstRow || 'Código' in firstRow || 'code' in firstRow || 'Code' in firstRow;
+
+      if (!hasPais || !hasMoneda || !hasCodigo) {
+        return res.status(400).json({
+          message: 'Excel file for codigos-moneda must contain columns for pais, moneda, and codigo',
+          requiredColumns: ['pais', 'moneda', 'codigo'],
+          foundColumns: Object.keys(firstRow)
+        });
+      }
+    }
+
     // Check if this catalog uses 'nombre' instead of 'descripcion'
     const usesNombre = definition.fields.some(field => field.name === 'nombre');
 
@@ -1485,6 +1500,55 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
             unidad.toString().trim(),
             simbolo.toString().trim(),
             tipoUnidad.toString().trim()
+          ]);
+
+          insertedCount++;
+          continue;
+        }
+
+        // Special handling for codigos-moneda
+        if (catalogKey === 'codigos-moneda') {
+          const pais = row.pais || row.Pais || row.país || row.País || row.country || row.Country;
+          const moneda = row.moneda || row.Moneda || row.currency || row.Currency;
+          const codigo = row.codigo || row.código || row.Codigo || row.Código || row.code || row.Code;
+
+          if (!pais || pais.toString().trim() === '') {
+            (errors as string[]).push(`Row ${i + 2}: pais is required`);
+            skippedCount++;
+            continue;
+          }
+          if (!moneda || moneda.toString().trim() === '') {
+            (errors as string[]).push(`Row ${i + 2}: moneda is required`);
+            skippedCount++;
+            continue;
+          }
+          if (!codigo || codigo.toString().trim() === '') {
+            (errors as string[]).push(`Row ${i + 2}: codigo is required`);
+            skippedCount++;
+            continue;
+          }
+
+          // Check if codigo already exists (unique field for codigos-moneda)
+          const existingItem = await pool.query(
+            `SELECT id FROM ${tableName} WHERE codigo = $1`,
+            [codigo.toString().trim()]
+          );
+
+          if (existingItem.rows.length > 0) {
+            skippedCount++;
+            continue;
+          }
+
+          // Insert the new codigo-moneda record
+          const insertQuery = `
+            INSERT INTO ${tableName} (pais, moneda, codigo)
+            VALUES ($1, $2, $3)
+          `;
+
+          await pool.query(insertQuery, [
+            pais.toString().trim(),
+            moneda.toString().trim(),
+            codigo.toString().trim()
           ]);
 
           insertedCount++;
