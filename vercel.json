@@ -24,7 +24,15 @@
       "destination": "/backoffice-api/src/api.ts"
     },
     {
-      "source": "/(?!api/).*",
+      "source": "/frt-favicon.png",
+      "destination": "/backoffice-admin/frt-favicon.png"
+    },
+    {
+      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
+      "destination": "/backoffice-admin/$1"
+    },
+    {
+      "source": "/((?!api|frt-favicon\\.png|.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)).*)",
       "destination": "/backoffice-admin/index.html"
     }
   ]
