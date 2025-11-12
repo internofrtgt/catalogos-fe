@@ -1687,6 +1687,44 @@ app.delete('/api/catalogs/:catalogKey/clear', authenticateToken, requireAdmin, a
   }
 });
 
+// Simple endpoint to clear actividades-economicas table
+app.post('/api/actividades-economicas/clear', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    console.log('Starting actividades-economicas clear operation...');
+
+    // Simple count query first
+    const countResult = await pool.query('SELECT COUNT(*) as count FROM actividades_economicas');
+    const recordCount = parseInt(countResult.rows[0].count);
+
+    console.log(`Found ${recordCount} records in actividades_economicas`);
+
+    if (recordCount === 0) {
+      return res.json({
+        message: 'No records to clear',
+        recordCount: 0
+      });
+    }
+
+    // Simple delete query
+    const deleteResult = await pool.query('DELETE FROM actividades_economicas');
+
+    console.log(`Deleted ${deleteResult.rowCount} records`);
+
+    res.json({
+      message: 'Successfully cleared actividades-economicas table',
+      recordCount: recordCount,
+      deletedRows: deleteResult.rowCount
+    });
+
+  } catch (error) {
+    console.error('Simple clear error:', error);
+    res.status(500).json({
+      message: 'Error clearing table',
+      error: error.message
+    });
+  }
+});
+
 // Geography endpoints
 app.get('/api/geography/provinces', authenticateToken, async (req, res) => {
   try {
