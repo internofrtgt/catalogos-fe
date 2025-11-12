@@ -1585,6 +1585,51 @@ app.post('/api/catalogs/:catalogKey/update-schema', authenticateToken, requireAd
   }
 });
 
+// Clear all records from catalog table
+app.delete('/api/catalogs/:catalogKey/clear', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { catalogKey } = req.params;
+
+    const definition = catalogDefinitionsMap.get(catalogKey);
+    if (!definition) {
+      return res.status(404).json({ message: 'Catalog not found' });
+    }
+
+    const tableName = definition.tableName;
+
+    // Count records before deletion
+    const countResult = await pool.query(`SELECT COUNT(*) as count FROM ${tableName}`);
+    const recordCount = parseInt(countResult.rows[0].count);
+
+    if (recordCount === 0) {
+      return res.json({
+        message: 'No records to clear',
+        catalogKey,
+        tableName,
+        recordCount: 0
+      });
+    }
+
+    // Delete all records
+    const deleteResult = await pool.query(`DELETE FROM ${tableName}`);
+
+    res.json({
+      message: 'All records cleared successfully',
+      catalogKey,
+      tableName,
+      recordsDeleted: recordCount,
+      deletedRows: deleteResult.rowCount
+    });
+
+  } catch (error) {
+    console.error('Clear catalog error:', error);
+    res.status(500).json({
+      message: 'Internal server error during clear operation',
+      error: error.message
+    });
+  }
+});
+
 // Geography endpoints
 app.get('/api/geography/provinces', authenticateToken, async (req, res) => {
   try {
