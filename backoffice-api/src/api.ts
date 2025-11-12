@@ -2254,5 +2254,365 @@ app.delete('/api/api-docs/:id', authenticateToken, requireAdmin, async (req, res
   }
 });
 
+// Seed API documentation endpoint
+app.post('/api/api-docs/seed', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    // Check if documentation already exists
+    const existingDocs = await pool.query('SELECT COUNT(*) as count FROM api_documents');
+    if (parseInt(existingDocs.rows[0].count) > 0) {
+      return res.json({ message: 'API documentation already exists' });
+    }
+
+    const documentation = [
+      {
+        title: 'Autenticación',
+        version: 'v1.0.0',
+        summary: 'Endpoints de autenticación y autorización',
+        content: JSON.stringify({
+          format: 'swagger-summary',
+          module: {
+            title: 'Autenticación',
+            description: 'Sistema de autenticación de usuarios y gestión de sesiones JWT',
+            baseUrl: '/api/auth',
+            icon: 'lock'
+          },
+          endpoints: [
+            {
+              method: 'POST',
+              path: '/api/auth/login',
+              summary: 'Iniciar sesión',
+              description: 'Autentica un usuario y retorna un token JWT',
+              authentication: 'none',
+              parameters: [
+                { name: 'username', in: 'body', required: true, type: 'string', description: 'Nombre de usuario' },
+                { name: 'password', in: 'body', required: true, type: 'string', description: 'Contraseña del usuario' }
+              ],
+              responses: [
+                {
+                  status: 200,
+                  description: 'Autenticación exitosa',
+                  body: {
+                    accessToken: 'jwt_token_string',
+                    user: {
+                      id: 'uuid',
+                      username: 'string',
+                      role: 'ADMIN|OPERATOR'
+                    }
+                  }
+                },
+                { status: 401, description: 'Credenciales inválidas' }
+              ]
+            },
+            {
+              method: 'GET',
+              path: '/api/auth/me',
+              summary: 'Obtener usuario actual',
+              description: 'Obtiene información del usuario desde el token JWT',
+              authentication: 'bearer',
+              responses: [
+                {
+                  status: 200,
+                  description: 'Información del usuario',
+                  body: {
+                    id: 'uuid',
+                    username: 'string',
+                    role: 'ADMIN|OPERATOR'
+                  }
+                }
+              ]
+            }
+          ]
+        })
+      },
+      {
+        title: 'Catálogos',
+        version: 'v1.0.0',
+        summary: 'Catálogos tributarios y datos de referencia del sistema fiscal costarricense',
+        content: JSON.stringify({
+          format: 'swagger-summary',
+          module: {
+            title: 'Catálogos',
+            description: 'Catálogos tributarios y datos de referencia del sistema fiscal costarricense',
+            baseUrl: '/api/catalogs',
+            icon: 'list'
+          },
+          endpoints: [
+            {
+              method: 'GET',
+              path: '/api/catalogs',
+              summary: 'Listar catálogos disponibles',
+              description: 'Lista todos los catálogos de datos tributarios disponibles',
+              authentication: 'bearer',
+              responses: [
+                {
+                  status: 200,
+                  description: 'Lista de catálogos disponibles',
+                  body: [
+                    {
+                      key: 'tipos-documento',
+                      label: 'Tipos de Documentos',
+                      tableName: 'tipos_documento',
+                      fields: ['id', 'codigo', 'descripcion', 'created_at', 'updated_at'],
+                      uniqueBy: ['codigo'],
+                      searchFields: ['descripcion', 'codigo']
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              method: 'GET',
+              path: '/api/catalogs/{catalogKey}',
+              summary: 'Obtener ítems de catálogo',
+              description: 'Obtiene ítems paginados de un catálogo específico',
+              authentication: 'bearer',
+              parameters: [
+                { name: 'catalogKey', in: 'path', required: true, type: 'string', description: 'Clave del catálogo' },
+                { name: 'search', in: 'query', required: false, type: 'string', description: 'Término de búsqueda' },
+                { name: 'page', in: 'query', required: false, type: 'number', description: 'Número de página (default: 1)' },
+                { name: 'limit', in: 'query', required: false, type: 'number', description: 'Ítems por página (default: 50, max: 200)' }
+              ],
+              responses: [
+                {
+                  status: 200,
+                  description: 'Ítems del catálogo',
+                  body: {
+                    data: [
+                      {
+                        id: 'uuid',
+                        codigo: 1,
+                        descripcion: 'Cédula Física'
+                      }
+                    ],
+                    meta: {
+                      total: 50,
+                      page: 1,
+                      limit: 50
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        })
+      },
+      {
+        title: 'Geografía',
+        version: 'v1.0.0',
+        summary: 'Datos geográficos de Costa Rica - provincias, cantones, distritos y barrios',
+        content: JSON.stringify({
+          format: 'swagger-summary',
+          module: {
+            title: 'Geografía',
+            description: 'Datos geográficos de Costa Rica - provincias, cantones, distritos y barrios',
+            baseUrl: '/api/geography',
+            icon: 'map'
+          },
+          endpoints: [
+            {
+              method: 'GET',
+              path: '/api/geography/provinces',
+              summary: 'Listar provincias',
+              description: 'Lista todas las provincias de Costa Rica con paginación y búsqueda',
+              authentication: 'bearer',
+              parameters: [
+                { name: 'search', in: 'query', required: false, type: 'string', description: 'Término de búsqueda' },
+                { name: 'page', in: 'query', required: false, type: 'number', description: 'Número de página (default: 1)' },
+                { name: 'limit', in: 'query', required: false, type: 'number', description: 'Ítems por página (default: 50, max: 200)' }
+              ],
+              responses: [
+                {
+                  status: 200,
+                  description: 'Lista de provincias',
+                  body: {
+                    data: [
+                      {
+                        id: 'uuid',
+                        nombre: 'San José',
+                        codigo: 1
+                      }
+                    ],
+                    meta: {
+                      total: 7,
+                      page: 1,
+                      limit: 50
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              method: 'GET',
+              path: '/api/geography/cantons',
+              summary: 'Listar cantones',
+              description: 'Lista todos los cantones con filtros opcionales',
+              authentication: 'bearer',
+              parameters: [
+                { name: 'search', in: 'query', required: false, type: 'string', description: 'Término de búsqueda' },
+                { name: 'provinceCode', in: 'query', required: false, type: 'number', description: 'Filtrar por código de provincia' },
+                { name: 'page', in: 'query', required: false, type: 'number', description: 'Número de página' },
+                { name: 'limit', in: 'query', required: false, type: 'number', description: 'Ítems por página' }
+              ]
+            }
+          ]
+        })
+      },
+      {
+        title: 'Usuarios',
+        version: 'v1.0.0',
+        summary: 'Sistema de gestión de usuarios para administradores',
+        content: JSON.stringify({
+          format: 'swagger-summary',
+          module: {
+            title: 'Usuarios',
+            description: 'Sistema de gestión de usuarios para administradores',
+            baseUrl: '/api/users',
+            icon: 'users'
+          },
+          endpoints: [
+            {
+              method: 'GET',
+              path: '/api/users',
+              summary: 'Listar usuarios',
+              description: 'Lista todos los usuarios con paginación y búsqueda (solo administradores)',
+              authentication: 'bearer',
+              parameters: [
+                { name: 'search', in: 'query', required: false, type: 'string', description: 'Buscar por nombre de usuario' },
+                { name: 'page', in: 'query', required: false, type: 'number', description: 'Número de página (default: 1)' },
+                { name: 'limit', in: 'query', required: false, type: 'number', description: 'Ítems por página (default: 20, max: 100)' }
+              ],
+              responses: [
+                {
+                  status: 200,
+                  description: 'Lista de usuarios',
+                  body: {
+                    data: [
+                      {
+                        id: 'uuid',
+                        username: 'admin',
+                        role: 'ADMIN',
+                        isActive: true
+                      }
+                    ],
+                    meta: {
+                      total: 1,
+                      page: 1,
+                      limit: 20
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              method: 'POST',
+              path: '/api/users',
+              summary: 'Crear usuario',
+              description: 'Crea un nuevo usuario (solo administradores)',
+              authentication: 'bearer',
+              parameters: [
+                { name: 'username', in: 'body', required: true, type: 'string', description: 'Nombre de usuario' },
+                { name: 'password', in: 'body', required: true, type: 'string', description: 'Contraseña del usuario' },
+                { name: 'role', in: 'body', required: true, type: 'string', description: 'Rol del usuario (ADMIN|OPERATOR)' },
+                { name: 'isActive', in: 'body', required: true, type: 'boolean', description: 'Estado del usuario' }
+              ],
+              responses: [
+                {
+                  status: 201,
+                  description: 'Usuario creado exitosamente'
+                },
+                { status: 409, description: 'Nombre de usuario ya existe' }
+              ]
+            }
+          ]
+        })
+      },
+      {
+        title: 'Documentación API',
+        version: 'v1.0.0',
+        summary: 'Sistema auto-documentado para integraciones externas',
+        content: JSON.stringify({
+          format: 'swagger-summary',
+          module: {
+            title: 'Documentación de API',
+            description: 'Sistema de documentación auto-contenida para facilitar integraciones externas',
+            baseUrl: '/api/api-docs',
+            icon: 'book'
+          },
+          endpoints: [
+            {
+              method: 'GET',
+              path: '/api/api-docs',
+              summary: 'Listar documentación',
+              description: 'Lista toda la documentación de API disponible',
+              authentication: 'bearer',
+              responses: [
+                {
+                  status: 200,
+                  description: 'Lista de documentación',
+                  body: {
+                    data: [
+                      {
+                        id: 'uuid',
+                        title: 'Autenticación',
+                        version: 'v1.0.0',
+                        summary: 'Sistema de autenticación de usuarios'
+                      }
+                    ],
+                    meta: {
+                      total: 5,
+                      page: 1,
+                      limit: 20
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              method: 'GET',
+              path: '/api/api-docs/{id}',
+              summary: 'Obtener documentación específica',
+              description: 'Obtiene documentación completa para una API específica',
+              authentication: 'bearer',
+              parameters: [
+                { name: 'id', in: 'path', required: true, type: 'string', description: 'ID del documento' }
+              ]
+            },
+            {
+              method: 'POST',
+              path: '/api/api-docs',
+              summary: 'Crear documentación',
+              description: 'Crea nueva documentación de API (solo administradores)',
+              authentication: 'bearer',
+              parameters: [
+                { name: 'title', in: 'body', required: true, type: 'string', description: 'Título del documento' },
+                { name: 'version', in: 'body', required: true, type: 'string', description: 'Versión' },
+                { name: 'summary', in: 'body', required: true, type: 'string', description: 'Resumen' },
+                { name: 'content', in: 'body', required: true, type: 'string', description: 'Contenido completo' }
+              ]
+            }
+          ]
+        })
+      }
+    ];
+
+    for (const doc of documentation) {
+      await pool.query(
+        `INSERT INTO api_documents (title, version, summary, content, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+        [doc.title, doc.version, doc.summary, doc.content]
+      );
+    }
+
+    res.json({
+      message: 'API documentation seeded successfully',
+      documentsInserted: documentation.length,
+      documents: documentation.map(d => ({ title: d.title, version: d.version }))
+    });
+  } catch (error) {
+    console.error('Seed API docs error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Export for Vercel
 export default app;
