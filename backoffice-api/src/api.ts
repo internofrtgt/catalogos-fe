@@ -1327,12 +1327,24 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
     // Validate required columns
     const firstRow = jsonData[0] as any;
     const hasDescripcion = 'descripcion' in firstRow || 'descripción' in firstRow || 'Descripcion' in firstRow || 'Description' in firstRow;
+    const hasNombre = 'nombre' in firstRow || 'Nombre' in firstRow || 'name' in firstRow || 'Name' in firstRow;
     const hasCodigo = 'codigo' in firstRow || 'código' in firstRow || 'Codigo' in firstRow || 'Code' in firstRow;
 
-    if (!hasDescripcion) {
-      return res.status(400).json({
-        message: 'Excel file must contain a "descripcion" column'
-      });
+    // Check if this catalog uses 'nombre' instead of 'descripcion'
+    const usesNombre = definition.fields.some(field => field.name === 'nombre');
+
+    if (usesNombre) {
+      if (!hasNombre) {
+        return res.status(400).json({
+          message: 'Excel file must contain a "nombre" column'
+        });
+      }
+    } else {
+      if (!hasDescripcion) {
+        return res.status(400).json({
+          message: 'Excel file must contain a "descripcion" column'
+        });
+      }
     }
 
     const tableName = definition.tableName;
@@ -1346,17 +1358,35 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
 
       try {
         // Extract values with flexible column name matching
-        let descripcion = row.descripcion || row.descripción || row.Descripcion || row.Description || row.descripcion?.trim();
+        let descripcionField = row.descripcion || row.descripción || row.Descripcion || row.Description || row.descripcion?.trim();
+        let nombreField = row.nombre || row.Nombre || row.name || row.Name || row.nombre?.trim();
         let codigo = row.codigo || row.código || row.Codigo || row.Code || row.codigo?.trim();
 
-        // Validate required fields
-        if (!descripcion || descripcion.toString().trim() === '') {
-          (errors as string[]).push(`Row ${i + 2}: descripcion is required`);
-          skippedCount++;
-          continue;
+        // Determine which field to use based on catalog structure
+        let fieldValue;
+        let fieldName;
+
+        if (usesNombre) {
+          fieldValue = nombreField;
+          fieldName = 'nombre';
+
+          if (!fieldValue || fieldValue.toString().trim() === '') {
+            (errors as string[]).push(`Row ${i + 2}: nombre is required`);
+            skippedCount++;
+            continue;
+          }
+        } else {
+          fieldValue = descripcionField;
+          fieldName = 'descripcion';
+
+          if (!fieldValue || fieldValue.toString().trim() === '') {
+            (errors as string[]).push(`Row ${i + 2}: descripcion is required`);
+            skippedCount++;
+            continue;
+          }
         }
 
-        descripcion = descripcion.toString().trim();
+        fieldValue = fieldValue.toString().trim();
 
         // Handle codigo (optional for some catalogs, but required for tipos-documento)
         if (catalogKey === 'tipos-documento' && (!codigo || codigo.toString().trim() === '')) {
@@ -1365,18 +1395,43 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
           continue;
         }
 
-        codigo = codigo ? codigo.toString().trim() : null;
+        // For actividades-economicas, codigo is required (it's unique field)
+        if (catalogKey === 'actividades-economicas' && (!codigo || codigo.toString().trim() === '')) {
+          (errors as string[]).push(`Row ${i + 2}: codigo is required for actividades-economicas`);
+          skippedCount++;
+          continue;
+        }
+
+        // Handle numeric codes for actividades-economicas and other catalogs with numeric codes
+        let codigoValue = null;
+        if (codigo) {
+          const isNumericCode = definition.fields.some(field =>
+            field.name === 'codigo' && field.type === 'numeric'
+          );
+
+          if (isNumericCode) {
+            codigoValue = parseFloat(codigo.toString().trim());
+            if (isNaN(codigoValue)) {
+              (errors as string[]).push(`Row ${i + 2}: codigo must be a valid number`);
+              skippedCount++;
+              continue;
+            }
+          } else {
+            codigoValue = codigo.toString().trim();
+          }
+        }
 
         // Check if item already exists (avoid duplicates)
         let checkQuery;
         let checkParams;
 
-        if (codigo) {
+        if (codigoValue !== null) {
           checkQuery = `SELECT id FROM ${tableName} WHERE codigo = $1`;
-          checkParams = [codigo];
+          checkParams = [codigoValue];
         } else {
-          checkQuery = `SELECT id FROM ${tableName} WHERE LOWER(TRIM(descripcion)) = LOWER($1)`;
-          checkParams = [descripcion];
+          const fieldNameToCheck = usesNombre ? 'nombre' : 'descripcion';
+          checkQuery = `SELECT id FROM ${tableName} WHERE LOWER(TRIM(${fieldNameToCheck})) = LOWER($1)`;
+          checkParams = [fieldValue];
         }
 
         const existingItem = await pool.query(checkQuery, checkParams);
@@ -1390,14 +1445,14 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
         let insertQuery;
         let insertValues;
 
-        if (codigo) {
-          insertQuery = `INSERT INTO ${tableName} (codigo, descripcion, created_at, updated_at)
+        if (codigoValue !== null) {
+          insertQuery = `INSERT INTO ${tableName} (codigo, ${fieldName}, created_at, updated_at)
                         VALUES ($1, $2, NOW(), NOW()) RETURNING *`;
-          insertValues = [codigo, descripcion];
+          insertValues = [codigoValue, fieldValue];
         } else {
-          insertQuery = `INSERT INTO ${tableName} (descripcion, created_at, updated_at)
+          insertQuery = `INSERT INTO ${tableName} (${fieldName}, created_at, updated_at)
                         VALUES ($1, NOW(), NOW()) RETURNING *`;
-          insertValues = [descripcion];
+          insertValues = [fieldValue];
         }
 
         await pool.query(insertQuery, insertValues);
