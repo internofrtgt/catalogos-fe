@@ -1,22 +1,20 @@
 import { Controller, Get, Post } from '@nestjs/common';
-import { DataSource } from 'typeorm';
-import { AppDataSource } from './typeorm.datasource';
+import { Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { User, UserRole } from '../users/user.entity';
 import * as bcrypt from 'bcrypt';
 
 @Controller('api/setup')
 export class SetupController {
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    @Inject('DataSource') private dataSource: any
+  ) {}
 
   @Post('migrate')
   async migrate() {
     try {
-      if (!AppDataSource.isInitialized) {
-        await AppDataSource.initialize();
-      }
-
-      await AppDataSource.runMigrations();
+      await this.dataSource.runMigrations();
 
       return {
         success: true,
@@ -34,11 +32,7 @@ export class SetupController {
   @Post('seed')
   async createAdminUser() {
     try {
-      if (!AppDataSource.isInitialized) {
-        await AppDataSource.initialize();
-      }
-
-      const userRepository = AppDataSource.getRepository(User);
+      const userRepository = this.dataSource.getRepository(User);
 
       const username = this.configService.get<string>('DEFAULT_ADMIN_USERNAME', 'admin');
       const password = this.configService.get<string>('DEFAULT_ADMIN_PASSWORD', 'ChangeMe123!');
@@ -90,16 +84,12 @@ export class SetupController {
   @Get('status')
   async status() {
     try {
-      if (!AppDataSource.isInitialized) {
-        await AppDataSource.initialize();
-      }
-
-      const migrations = await AppDataSource.query(
+      const migrations = await this.dataSource.query(
         'SELECT * FROM migrations ORDER BY id DESC LIMIT 5'
       );
 
       // Check admin user
-      const userRepository = AppDataSource.getRepository(User);
+      const userRepository = this.dataSource.getRepository(User);
       const adminUser = await userRepository.findOne({
         where: { role: UserRole.ADMIN }
       });
