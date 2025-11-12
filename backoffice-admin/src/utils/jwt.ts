@@ -23,7 +23,8 @@ export const decodeToken = (token: string): JwtPayload | null => {
   }
 };
 
-export const isTokenExpired = (token: string): boolean => {
+export const isTokenExpired = (token: string | null): boolean => {
+  if (!token) return true;
   const decoded = decodeToken(token);
   if (!decoded) return true;
 
@@ -31,12 +32,13 @@ export const isTokenExpired = (token: string): boolean => {
   return decoded.exp <= now;
 };
 
-export const getTokenExpirationTime = (token: string): number | null => {
+export const getTokenExpirationTime = (token: string | null): number | null => {
+  if (!token) return null;
   const decoded = decodeToken(token);
   return decoded ? decoded.exp : null;
 };
 
-export const getTimeUntilExpiration = (token: string): number => {
+export const getTimeUntilExpiration = (token: string | null): number => {
   const expirationTime = getTokenExpirationTime(token);
   if (!expirationTime) return 0;
 
