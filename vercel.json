@@ -22,10 +22,6 @@
     {
       "src": "/api/(.*)",
       "dest": "/backoffice-api/src/api.ts"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/backoffice-admin/index.html"
     }
   ]
 }
