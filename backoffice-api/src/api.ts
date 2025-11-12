@@ -833,25 +833,36 @@ app.get('/api/geography/cantons', authenticateToken, async (req, res) => {
     const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
 
     let query = 'SELECT * FROM cantones';
+    let countQuery = 'SELECT COUNT(*) FROM cantones';
     const params: any[] = [];
+    const countParams: any[] = [];
+
+    // Build WHERE conditions
+    const whereConditions: string[] = [];
 
     if (provinceCode) {
-      query += ' WHERE province_code = $1';
+      whereConditions.push('province_code = $' + (params.length + 1));
       params.push(provinceCode);
+      countParams.push(provinceCode);
     }
 
     if (search) {
-      const paramIndex = params.length + 1;
-      const searchCondition = provinceCode
-        ? ` AND (CAST(nombre AS TEXT) ILIKE $${paramIndex} OR CAST(codigo AS TEXT) ILIKE $${paramIndex} OR CAST(provincia_nombre AS TEXT) ILIKE $${paramIndex})`
-        : ` WHERE (CAST(nombre AS TEXT) ILIKE $1 OR CAST(codigo AS TEXT) ILIKE $1 OR CAST(provincia_nombre AS TEXT) ILIKE $1)`;
-      query += searchCondition;
+      const searchConditions = [
+        'CAST(nombre AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(codigo AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(provincia_nombre AS TEXT) ILIKE $' + (params.length + 1)
+      ];
+      whereConditions.push('(' + searchConditions.join(' OR ') + ')');
       params.push(`%${search}%`);
+      countParams.push(`%${search}%`);
     }
 
-    const countQuery = search
-      ? `SELECT COUNT(*) FROM cantones${provinceCode ? ' WHERE province_code = $1' : ''}${provinceCode && search ? ' AND (CAST(nombre AS TEXT) ILIKE $2 OR CAST(codigo AS TEXT) ILIKE $2 OR CAST(provincia_nombre AS TEXT) ILIKE $2)' : search && !provinceCode ? ' WHERE (CAST(nombre AS TEXT) ILIKE $1 OR CAST(codigo AS TEXT) ILIKE $1 OR CAST(provincia_nombre AS TEXT) ILIKE $1)' : ''}`
-      : `SELECT COUNT(*) FROM cantons${provinceCode ? ' WHERE province_code = $1' : ''}`;
+    // Add WHERE clause if there are conditions
+    if (whereConditions.length > 0) {
+      const whereClause = ' WHERE ' + whereConditions.join(' AND ');
+      query += whereClause;
+      countQuery += whereClause;
+    }
 
     query += ' ORDER BY province_code ASC, codigo ASC';
     const offset = (pageNumber - 1) * limitNumber;
@@ -859,7 +870,7 @@ app.get('/api/geography/cantons', authenticateToken, async (req, res) => {
 
     const [itemsResult, countResult] = await Promise.all([
       pool.query(query, params),
-      pool.query(countQuery, params)
+      pool.query(countQuery, countParams)
     ]);
 
     res.json({
@@ -885,29 +896,43 @@ app.get('/api/geography/districts', authenticateToken, async (req, res) => {
     const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
 
     let query = 'SELECT * FROM distritos';
+    let countQuery = 'SELECT COUNT(*) FROM distritos';
     const params: any[] = [];
+    const countParams: any[] = [];
+
+    // Build WHERE conditions
+    const whereConditions: string[] = [];
 
     if (provinceCode) {
-      query += ' WHERE province_code = $1';
+      whereConditions.push('province_code = $' + (params.length + 1));
       params.push(provinceCode);
+      countParams.push(provinceCode);
     }
 
     if (cantonCode) {
-      const condition = provinceCode ? ' AND canton_code = $2' : ' WHERE canton_code = $1';
-      query += condition;
+      whereConditions.push('canton_code = $' + (params.length + 1));
       params.push(cantonCode);
+      countParams.push(cantonCode);
     }
 
     if (search) {
-      const paramIndex = params.length + 1;
-      const searchCondition = (provinceCode || cantonCode)
-        ? ` AND (CAST(nombre AS TEXT) ILIKE $${paramIndex} OR CAST(codigo AS TEXT) ILIKE $${paramIndex} OR CAST(provincia_nombre AS TEXT) ILIKE $${paramIndex} OR CAST(canton_nombre AS TEXT) ILIKE $${paramIndex})`
-        : ` WHERE (CAST(nombre AS TEXT) ILIKE $1 OR CAST(codigo AS TEXT) ILIKE $1 OR CAST(provincia_nombre AS TEXT) ILIKE $1 OR CAST(canton_nombre AS TEXT) ILIKE $1)`;
-      query += searchCondition;
+      const searchConditions = [
+        'CAST(nombre AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(codigo AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(provincia_nombre AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(canton_nombre AS TEXT) ILIKE $' + (params.length + 1)
+      ];
+      whereConditions.push('(' + searchConditions.join(' OR ') + ')');
       params.push(`%${search}%`);
+      countParams.push(`%${search}%`);
     }
 
-    const countQuery = `SELECT COUNT(*) FROM distritos${provinceCode ? ' WHERE province_code = $1' : ''}${cantonCode ? (provinceCode ? ' AND canton_code = $2' : ' WHERE canton_code = $1') : ''}${search ? ((provinceCode || cantonCode) ? ' AND (CAST(nombre AS TEXT) ILIKE $' + (params.length) + ' OR CAST(codigo AS TEXT) ILIKE $' + (params.length) + ' OR CAST(provincia_nombre AS TEXT) ILIKE $' + (params.length) + ' OR CAST(canton_nombre AS TEXT) ILIKE $' + (params.length) + ')' : ' WHERE (CAST(nombre AS TEXT) ILIKE $1 OR CAST(codigo AS TEXT) ILIKE $1 OR CAST(provincia_nombre AS TEXT) ILIKE $1 OR CAST(canton_nombre AS TEXT) ILIKE $1)') : ''}`;
+    // Add WHERE clause if there are conditions
+    if (whereConditions.length > 0) {
+      const whereClause = ' WHERE ' + whereConditions.join(' AND ');
+      query += whereClause;
+      countQuery += whereClause;
+    }
 
     query += ' ORDER BY province_code ASC, canton_code ASC, codigo ASC';
     const offset = (pageNumber - 1) * limitNumber;
@@ -915,7 +940,7 @@ app.get('/api/geography/districts', authenticateToken, async (req, res) => {
 
     const [itemsResult, countResult] = await Promise.all([
       pool.query(query, params),
-      pool.query(countQuery, params)
+      pool.query(countQuery, countParams)
     ]);
 
     res.json({
