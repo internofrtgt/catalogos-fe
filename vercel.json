@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "backoffice-api/src/api.ts",
+      "src": "api.ts",
       "use": "@vercel/node"
     },
     {
@@ -16,7 +16,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/backoffice-api/src/api.ts"
+      "destination": "/api.ts"
     },
     {
       "source": "/(.*)",
