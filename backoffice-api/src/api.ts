@@ -2325,20 +2325,21 @@ app.get('/api/geography/cantons', authenticateToken, async (req, res) => {
     const whereConditions: string[] = [];
 
     if (provinceCode) {
-      whereConditions.push('province_code = $' + (params.length + 1));
+      whereConditions.push('codigo_provincia = $' + (params.length + 1));
       params.push(provinceCode);
       countParams.push(provinceCode);
     }
 
     if (search) {
       const searchConditions = [
-        'CAST(nombre AS TEXT) ILIKE $' + (params.length + 1),
-        'CAST(codigo AS TEXT) ILIKE $' + (params.length + 1),
-        'CAST(provincia_nombre AS TEXT) ILIKE $' + (params.length + 1)
+        'CAST(canton AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(codigo_canton AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(provincia AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(codigo_provincia AS TEXT) ILIKE $' + (params.length + 2)
       ];
       whereConditions.push('(' + searchConditions.join(' OR ') + ')');
-      params.push(`%${search}%`);
-      countParams.push(`%${search}%`);
+      params.push(`%${search}%`, `%${search}%`);
+      countParams.push(`%${search}%`, `%${search}%`);
     }
 
     // Add WHERE clause if there are conditions
@@ -2348,7 +2349,7 @@ app.get('/api/geography/cantons', authenticateToken, async (req, res) => {
       countQuery += whereClause;
     }
 
-    query += ' ORDER BY province_code ASC, codigo ASC';
+    query += ' ORDER BY codigo_provincia ASC, codigo_canton ASC';
     const offset = (pageNumber - 1) * limitNumber;
     query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
 
@@ -2357,8 +2358,11 @@ app.get('/api/geography/cantons', authenticateToken, async (req, res) => {
       pool.query(countQuery, countParams)
     ]);
 
+    // Transform database row keys from snake_case to camelCase for frontend compatibility
+    const transformedData = itemsResult.rows.map(row => transformRowKeys(row));
+
     res.json({
-      data: itemsResult.rows,
+      data: transformedData,
       meta: {
         total: Number(countResult.rows[0].count),
         page: pageNumber,
@@ -2531,19 +2535,19 @@ app.get('/api/geography/provinces/:provinceCode/cantons', authenticateToken, asy
     const pageNumber = Number(page);
     const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
 
-    let query = 'SELECT * FROM cantones WHERE province_code = $1';
+    let query = 'SELECT * FROM cantones WHERE codigo_provincia = $1';
     const params: any[] = [provinceCode];
 
     if (search) {
-      query += ' AND (CAST(nombre AS TEXT) ILIKE $2 OR CAST(codigo AS TEXT) ILIKE $2 OR CAST(provincia_nombre AS TEXT) ILIKE $2)';
+      query += ' AND (CAST(canton AS TEXT) ILIKE $2 OR CAST(codigo_canton AS TEXT) ILIKE $2 OR CAST(provincia AS TEXT) ILIKE $2)';
       params.push(`%${search}%`);
     }
 
     const countQuery = search
-      ? `SELECT COUNT(*) FROM cantones WHERE province_code = $1 AND (CAST(nombre AS TEXT) ILIKE $2 OR CAST(codigo AS TEXT) ILIKE $2 OR CAST(provincia_nombre AS TEXT) ILIKE $2)`
-      : 'SELECT COUNT(*) FROM cantones WHERE province_code = $1';
+      ? `SELECT COUNT(*) FROM cantones WHERE codigo_provincia = $1 AND (CAST(canton AS TEXT) ILIKE $2 OR CAST(codigo_canton AS TEXT) ILIKE $2 OR CAST(provincia AS TEXT) ILIKE $2)`
+      : 'SELECT COUNT(*) FROM cantones WHERE codigo_provincia = $1';
 
-    query += ' ORDER BY codigo ASC';
+    query += ' ORDER BY codigo_canton ASC';
     const offset = (pageNumber - 1) * limitNumber;
     query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
 
@@ -2552,8 +2556,11 @@ app.get('/api/geography/provinces/:provinceCode/cantons', authenticateToken, asy
       pool.query(countQuery, params)
     ]);
 
+    // Transform database row keys from snake_case to camelCase for frontend compatibility
+    const transformedData = itemsResult.rows.map(row => transformRowKeys(row));
+
     res.json({
-      data: itemsResult.rows,
+      data: transformedData,
       meta: {
         total: Number(countResult.rows[0].count),
         page: pageNumber,
