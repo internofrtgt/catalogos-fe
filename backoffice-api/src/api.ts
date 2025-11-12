@@ -1442,7 +1442,7 @@ app.put('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-app.delete('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+app.delete('/api/users/:id', authenticateToken, requireAdmin, async (req: express.Request & { user?: JwtPayload }, res) => {
   try {
     const { id } = req.params;
 
