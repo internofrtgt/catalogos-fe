@@ -1440,7 +1440,7 @@ app.delete('/api/users/:id', authenticateToken, requireAdmin, async (req, res) =
     const { id } = req.params;
 
     // Prevent self-deletion
-    if (req.user.id === id) {
+    if (req.user && req.user.sub === id) {
       return res.status(400).json({ message: 'No puedes eliminar tu propio usuario' });
     }
 
