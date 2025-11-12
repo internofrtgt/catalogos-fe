@@ -479,16 +479,52 @@ const catalogDefinitionsMap = new Map(
   catalogDefinitions.map((def) => [def.key, def]),
 );
 
-// Helper function to transform snake_case to camelCase
-function snakeToCamel(snakeStr: string): string {
-  return snakeStr.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+// Helper function to transform database column names to camelCase
+function toCamelCase(str: string): string {
+  // Handle snake_case: tipo_unidad -> tipoUnidad
+  if (str.includes('_')) {
+    return str.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+  }
+
+  // Handle specific known cases: tipounidad -> tipoUnidad
+  const knownCases: { [key: string]: string } = {
+    'tipounidad': 'tipoUnidad',
+    'tipocodigo': 'tipoCodigo',
+    'codigomoneda': 'codigoMoneda',
+    'codigopais': 'codigoPais',
+    // Add more as needed
+  };
+
+  if (knownCases[str]) {
+    return knownCases[str];
+  }
+
+  // Handle camelCase with first letter lowercase (already correct)
+  if (/^[a-z][a-zA-Z]*$/.test(str)) {
+    return str;
+  }
+
+  // Handle lowercase words: add camelCase transitions for common words
+  const words = ['tipo', 'codigo', 'nombre', 'descripcion', 'unidad', 'simbolo'];
+  let result = str;
+
+  for (const word of words) {
+    if (result.includes(word) && result.indexOf(word) > 0) {
+      const index = result.indexOf(word);
+      result = result.substring(0, index) +
+                word.charAt(0).toUpperCase() +
+                word.substring(1);
+    }
+  }
+
+  return result;
 }
 
-// Helper function to transform database row object keys from snake_case to camelCase
+// Helper function to transform database row object keys to camelCase
 function transformRowKeys(row: any): any {
   const transformed: any = {};
   for (const key in row) {
-    transformed[snakeToCamel(key)] = row[key];
+    transformed[toCamelCase(key)] = row[key];
   }
   return transformed;
 }
