@@ -13,8 +13,7 @@ import type { AuthUser, LoginResponse } from '../api/auth';
 import {
   isTokenExpired,
   getTimeUntilExpiration,
-  formatTimeRemaining,
-  getTokenExpirationTime
+  formatTimeRemaining
 } from '../utils/jwt';
 
 interface AuthState {
@@ -102,7 +101,12 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
       if (timeLeft <= 0) {
         // Token expirado, cerrar sesión
-        logout();
+        setState({ token: null, user: null });
+        setAuthToken(null);
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(ACTIVITY_KEY);
+        setShowExpirationWarning(false);
+        navigate('/login', { replace: true });
         return;
       }
 
@@ -125,7 +129,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     checkExpiration();
 
     return () => clearInterval(interval);
-  }, [state.token]);
+  }, [state.token, navigate]);
 
   const login = useCallback(
     (payload: LoginResponse) => {
