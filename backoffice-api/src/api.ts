@@ -1426,7 +1426,7 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
     // Check if this catalog uses 'nombre' instead of 'descripcion'
     const usesNombre = definition.fields.some(field => field.name === 'nombre');
 
-    if (catalogKey !== 'unidades-medida') {
+    if (catalogKey !== 'unidades-medida' && catalogKey !== 'codigos-moneda') {
       if (usesNombre) {
         if (!hasNombre) {
           return res.status(400).json({
