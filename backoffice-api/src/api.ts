@@ -110,7 +110,30 @@ app.get('/api/auth/me', async (req, res) => {
   }
 });
 
-// Create admin user endpoint (temporary for setup)
+// Create users table if it doesn't exist
+app.post('/api/setup/table', async (req, res) => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        username VARCHAR(120) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        role VARCHAR(50) NOT NULL DEFAULT 'OPERATOR',
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    res.json({ message: 'Users table created successfully' });
+
+  } catch (error) {
+    console.error('Table creation error:', error);
+    res.status(500).json({ message: 'Error creating users table', error: error.message });
+  }
+});
+
+// Create admin user endpoint
 app.post('/api/setup/admin', async (req, res) => {
   try {
     const username = process.env.DEFAULT_ADMIN_USERNAME || 'admin';
