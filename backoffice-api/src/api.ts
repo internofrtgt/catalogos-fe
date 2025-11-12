@@ -2,9 +2,28 @@ import express from 'express';
 import { Pool } from 'pg';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import xlsx from 'xlsx';
 
 const app = express();
 app.use(express.json());
+
+// Setup multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept Excel files
+    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        file.mimetype === 'application/vnd.ms-excel') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only Excel files are allowed (.xlsx, .xls)'));
+    }
+  }
+});
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -1278,6 +1297,153 @@ app.delete('/api/catalogs/:catalogKey/:id', authenticateToken, requireAdmin, asy
   } catch (error) {
     console.error('Delete catalog item error:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Import catalog items from Excel
+app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, upload.single('file'), async (req, res) => {
+  try {
+    const { catalogKey } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const definition = catalogDefinitionsMap.get(catalogKey);
+    if (!definition) {
+      return res.status(404).json({ message: 'Catalog not found' });
+    }
+
+    // Parse Excel file
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = xlsx.utils.sheet_to_json(worksheet);
+
+    if (jsonData.length === 0) {
+      return res.status(400).json({ message: 'Excel file is empty or invalid format' });
+    }
+
+    // Validate required columns
+    const firstRow = jsonData[0];
+    const hasDescripcion = 'descripcion' in firstRow || 'descripción' in firstRow || 'Descripcion' in firstRow || 'Description' in firstRow;
+    const hasCodigo = 'codigo' in firstRow || 'código' in firstRow || 'Codigo' in firstRow || 'Code' in firstRow;
+
+    if (!hasDescripcion) {
+      return res.status(400).json({
+        message: 'Excel file must contain a "descripcion" column'
+      });
+    }
+
+    const tableName = definition.tableName;
+    let insertedCount = 0;
+    let skippedCount = 0;
+    const errors = [];
+
+    // Process each row
+    for (let i = 0; i < jsonData.length; i++) {
+      const row = jsonData[i];
+
+      try {
+        // Extract values with flexible column name matching
+        let descripcion = row.descripcion || row.descripción || row.Descripcion || row.Description || row.descripcion?.trim();
+        let codigo = row.codigo || row.código || row.Codigo || row.Code || row.codigo?.trim();
+
+        // Validate required fields
+        if (!descripcion || descripcion.toString().trim() === '') {
+          errors.push(`Row ${i + 2}: descripcion is required`);
+          skippedCount++;
+          continue;
+        }
+
+        descripcion = descripcion.toString().trim();
+
+        // Handle codigo (optional for some catalogs, but required for tipos-documento)
+        if (catalogKey === 'tipos-documento' && (!codigo || codigo.toString().trim() === '')) {
+          errors.push(`Row ${i + 2}: codigo is required for tipos-documento`);
+          skippedCount++;
+          continue;
+        }
+
+        codigo = codigo ? codigo.toString().trim() : null;
+
+        // Check if item already exists (avoid duplicates)
+        let checkQuery;
+        let checkParams;
+
+        if (codigo) {
+          checkQuery = `SELECT id FROM ${tableName} WHERE codigo = $1`;
+          checkParams = [codigo];
+        } else {
+          checkQuery = `SELECT id FROM ${tableName} WHERE LOWER(TRIM(descripcion)) = LOWER($1)`;
+          checkParams = [descripcion];
+        }
+
+        const existingItem = await pool.query(checkQuery, checkParams);
+
+        if (existingItem.rows.length > 0) {
+          skippedCount++;
+          continue;
+        }
+
+        // Insert new item
+        let insertQuery;
+        let insertValues;
+
+        if (codigo) {
+          insertQuery = `INSERT INTO ${tableName} (codigo, descripcion, created_at, updated_at)
+                        VALUES ($1, $2, NOW(), NOW()) RETURNING *`;
+          insertValues = [codigo, descripcion];
+        } else {
+          insertQuery = `INSERT INTO ${tableName} (descripcion, created_at, updated_at)
+                        VALUES ($1, NOW(), NOW()) RETURNING *`;
+          insertValues = [descripcion];
+        }
+
+        await pool.query(insertQuery, insertValues);
+        insertedCount++;
+
+      } catch (rowError) {
+        console.error(`Error processing row ${i + 2}:`, rowError);
+        errors.push(`Row ${i + 2}: ${rowError.message}`);
+        skippedCount++;
+      }
+    }
+
+    const response = {
+      message: 'Import completed',
+      summary: {
+        total: jsonData.length,
+        inserted: insertedCount,
+        skipped: skippedCount,
+        errors: errors.length
+      },
+      details: {
+        catalogKey,
+        tableName,
+        errors: errors.slice(0, 10), // Limit errors to first 10
+        hasMoreErrors: errors.length > 10
+      }
+    };
+
+    if (errors.length > 0) {
+      response.warning = 'Some rows had errors and were skipped';
+    }
+
+    res.json(response);
+
+  } catch (error) {
+    console.error('Import catalog error:', error);
+
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File too large. Maximum size is 10MB.' });
+    }
+
+    if (error.message === 'Only Excel files are allowed (.xlsx, .xls)') {
+      return res.status(400).json({ message: error.message });
+    }
+
+    res.status(500).json({ message: 'Internal server error during import' });
   }
 });
 
