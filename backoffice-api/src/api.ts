@@ -1325,7 +1325,7 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
     }
 
     // Validate required columns
-    const firstRow = jsonData[0];
+    const firstRow = jsonData[0] as any;
     const hasDescripcion = 'descripcion' in firstRow || 'descripción' in firstRow || 'Descripcion' in firstRow || 'Description' in firstRow;
     const hasCodigo = 'codigo' in firstRow || 'código' in firstRow || 'Codigo' in firstRow || 'Code' in firstRow;
 
