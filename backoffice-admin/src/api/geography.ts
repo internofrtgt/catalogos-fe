@@ -33,13 +33,13 @@ export interface District {
 
 export interface Barrio {
   id: string;
-  provinciaNombre: string;
-  provinceCode: number;
-  cantonNombre: string;
-  cantonCode: number;
-  districtName: string;
-  districtCode: number | null;
-  nombre: string;
+  provincia: string;
+  codigoProvincia: number;
+  canton: string;
+  codigoCanton: string;
+  distrito: string;
+  codigoDistrito: string;
+  barrio: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -202,13 +202,13 @@ export const listBarrios = async (
 };
 
 export const createBarrio = async (payload: {
-  provinciaNombre: string;
-  provinceCode: number;
-  cantonNombre: string;
-  cantonCode: number;
-  districtName: string;
-  districtCode?: number | null;
-  nombre: string;
+  provincia: string;
+  codigoProvincia: number;
+  canton: string;
+  codigoCanton: string;
+  distrito: string;
+  codigoDistrito: string;
+  barrio: string;
 }) => {
   const { data } = await http.post('/geography/barrios', payload);
   return data;
@@ -217,13 +217,13 @@ export const createBarrio = async (payload: {
 export const updateBarrio = async (
   id: string,
   payload: Partial<{
-    provinciaNombre: string;
-    provinceCode: number;
-    cantonNombre: string;
-    cantonCode: number;
-    districtName: string;
-    districtCode: number | null;
-    nombre: string;
+    provincia: string;
+    codigoProvincia: number;
+    canton: string;
+    codigoCanton: string;
+    distrito: string;
+    codigoDistrito: string;
+    barrio: string;
   }>,
 ) => {
   const { data } = await http.put(`/geography/barrios/${id}`, payload);

@@ -27,21 +27,21 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { GeoImportDialog } from '../../components/geography/GeoImportDialog';
 
 const barrioFields: CatalogFieldConfig[] = [
-  { name: 'provinciaNombre', label: 'Provincia', type: 'string', required: true },
-  { name: 'provinceCode', label: 'Codigo Provincia', type: 'int', required: true },
-  { name: 'cantonNombre', label: 'Canton', type: 'string', required: true },
-  { name: 'cantonCode', label: 'Codigo Canton', type: 'int', required: true },
-  { name: 'districtName', label: 'Distrito', type: 'string', required: true },
-  { name: 'districtCode', label: 'Codigo Distrito', type: 'int' },
-  { name: 'nombre', label: 'Barrio', type: 'string', required: true },
+  { name: 'provincia', label: 'Provincia', type: 'string', required: true },
+  { name: 'codigoProvincia', label: 'Codigo Provincia', type: 'int', required: true },
+  { name: 'canton', label: 'Canton', type: 'string', required: true },
+  { name: 'codigoCanton', label: 'Codigo Canton', type: 'string', required: true },
+  { name: 'distrito', label: 'Distrito', type: 'string', required: true },
+  { name: 'codigoDistrito', label: 'Codigo Distrito', type: 'string', required: true },
+  { name: 'barrio', label: 'Barrio', type: 'string', required: true },
 ];
 
 export const BarriosPage = () => {
   const [params, setParams] = useState<
     CatalogListParams & {
-      provinceCode?: number;
-      cantonCode?: number;
-      districtName?: string;
+      codigoProvincia?: number;
+      codigoCanton?: string;
+      distrito?: string;
     }
   >({
     page: 1,
@@ -61,9 +61,9 @@ export const BarriosPage = () => {
         page: params.page,
         limit: params.limit,
         search: params.search,
-        provinceCode: params.provinceCode,
-        cantonCode: params.cantonCode,
-        districtName: params.districtName,
+        provinceCode: params.codigoProvincia,
+        cantonCode: params.codigoCanton ? Number(params.codigoCanton) : undefined,
+        districtName: params.distrito,
       }),
   });
 
@@ -136,13 +136,13 @@ export const BarriosPage = () => {
         />
         <TextField
           placeholder="Codigo provincia"
-          value={params.provinceCode?.toString() ?? ''}
+          value={params.codigoProvincia?.toString() ?? ''}
           onChange={(event) => {
             const value = event.target.value;
             setParams((prev) => ({
               ...prev,
               page: 1,
-              provinceCode: value ? Number(value) : undefined,
+              codigoProvincia: value ? Number(value) : undefined,
             }));
           }}
           size="small"
@@ -150,13 +150,13 @@ export const BarriosPage = () => {
         />
         <TextField
           placeholder="Codigo canton"
-          value={params.cantonCode?.toString() ?? ''}
+          value={params.codigoCanton?.toString() ?? ''}
           onChange={(event) => {
             const value = event.target.value;
             setParams((prev) => ({
               ...prev,
               page: 1,
-              cantonCode: value ? Number(value) : undefined,
+              codigoCanton: value || undefined,
             }));
           }}
           size="small"
@@ -164,12 +164,12 @@ export const BarriosPage = () => {
         />
         <TextField
           placeholder="Distrito"
-          value={params.districtName ?? ''}
+          value={params.distrito ?? ''}
           onChange={(event) =>
             setParams((prev) => ({
               ...prev,
               page: 1,
-              districtName: event.target.value || undefined,
+              distrito: event.target.value || undefined,
             }))
           }
           size="small"
