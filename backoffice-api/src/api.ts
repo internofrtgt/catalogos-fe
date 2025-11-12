@@ -3629,23 +3629,23 @@ app.post('/api/geography/:table/import', authenticateToken, requireAdmin, upload
     validationFunction = () => ({ isValid: false, error: 'Invalid table', data: null });
 
     if (table === 'provinces') {
-      requiredColumns = ['province_code', 'province_name'];
+      requiredColumns = ['nombre', 'codigo'];
       validationFunction = (row: any, i: number) => {
-        const province_code = row.province_code || row.codigo_provincia || row.codigoProvincia || row.provinceCode || row.codigo;
-        const province_name = row.province_name || row.nombre || row.nombre_provincia || row.provinceName;
+        const codigo = row.codigo || row.codigo_provincia || row.codigoProvincia || row.provinceCode || row.province_code;
+        const nombre = row.nombre || row.nombre_provincia || row.provinceName || row.province_name || row.province_name;
 
-        if (!province_code || province_code.toString().trim() === '') {
-          return { isValid: false, error: `Row ${i + 2}: province_code is required`, data: null };
+        if (!codigo || codigo.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: codigo is required`, data: null };
         }
-        if (!province_name || province_name.toString().trim() === '') {
-          return { isValid: false, error: `Row ${i + 2}: province_name is required`, data: null };
+        if (!nombre || nombre.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: nombre is required`, data: null };
         }
 
         return {
           isValid: true,
           data: {
-            province_code: parseInt(province_code.toString().trim()),
-            province_name: province_name.toString().trim()
+            codigo: parseInt(codigo.toString().trim()),
+            nombre: nombre.toString().trim()
           }
         };
       };
@@ -3763,8 +3763,8 @@ app.post('/api/geography/:table/import', authenticateToken, requireAdmin, upload
         let checkParams: any[];
 
         if (table === 'provinces') {
-          checkQuery = `SELECT id FROM ${tableName} WHERE province_code = $1`;
-          checkParams = [data.province_code];
+          checkQuery = `SELECT id FROM ${tableName} WHERE codigo = $1`;
+          checkParams = [data.codigo];
         } else if (table === 'cantons') {
           checkQuery = `SELECT id FROM ${tableName} WHERE province_code = $1 AND canton_code = $2`;
           checkParams = [data.province_code, data.canton_code];
