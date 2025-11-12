@@ -492,6 +492,8 @@ function toCamelCase(str: string): string {
     'tipocodigo': 'tipoCodigo',
     'codigomoneda': 'codigoMoneda',
     'codigopais': 'codigoPais',
+    'codigo_provincia': 'codigoProvincia',
+    'codigo_canton': 'codigoCanton',
     // Add more as needed
   };
 
@@ -3863,6 +3865,48 @@ app.get('/api/diagnostic/table/:tableName', authenticateToken, requireAdmin, asy
   } catch (error) {
     console.error('Diagnostic error:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Diagnostic endpoint to check cantones data transformation
+app.get('/api/diagnostic/cantones-data', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    console.log('Diagnostic: Getting raw cantones data...');
+
+    // Get raw data from database
+    const rawResult = await pool.query('SELECT * FROM cantones LIMIT 3');
+
+    console.log('Raw data from database:', rawResult.rows);
+
+    // Get transformed data
+    const transformedData = rawResult.rows.map(row => transformRowKeys(row));
+
+    console.log('Transformed data for frontend:', transformedData);
+
+    // Also show individual transformations
+    const transformations = rawResult.rows.map(row => {
+      const transformed: any = {};
+      for (const key in row) {
+        transformed[key] = row[key];
+        transformed[toCamelCase(key)] = row[key];
+      }
+      return transformed;
+    });
+
+    res.json({
+      message: 'Cantones data diagnostic',
+      rawData: rawResult.rows,
+      transformedData: transformedData,
+      transformations: transformations,
+      camelCaseMappings: Object.keys(rawResult.rows[0] || {}).map(key => ({
+        original: key,
+        camelCase: toCamelCase(key)
+      }))
+    });
+
+  } catch (error) {
+    console.error('Cantones diagnostic error:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
 
