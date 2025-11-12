@@ -2023,8 +2023,10 @@ app.post('/api/schemas/update-all', authenticateToken, requireAdmin, async (req,
         key: 'cantones',
         tableName: 'cantones',
         fields: [
-          { name: 'province_code', type: 'int', required: true },
-          { name: 'codigo', type: 'string', required: true, length: 50 }
+          { name: 'provincia', type: 'string', required: true, length: 120 },
+          { name: 'codigo_provincia', type: 'int', required: true },
+          { name: 'canton', type: 'string', required: true, length: 120 },
+          { name: 'codigo_canton', type: 'string', required: true, length: 50 }
         ]
       },
       {
@@ -3650,28 +3652,33 @@ app.post('/api/geography/:table/import', authenticateToken, requireAdmin, upload
         };
       };
     } else if (table === 'cantons') {
-      requiredColumns = ['province_code', 'canton_code', 'canton_name'];
+      requiredColumns = ['provincia', 'codigo_provincia', 'canton', 'codigo_canton'];
       validationFunction = (row: any, i: number) => {
-        const province_code = row.province_code || row.codigo_provincia || row.codigoProvincia || row.provinceCode || row.codigo;
-        const canton_code = row.canton_code || row.codigo_canton || row.codigoCanton || row.cantonCode;
-        const canton_name = row.canton_name || row.nombre || row.nombre_canton || row.cantonName;
+        const provincia = row.provincia || row.provincia_nombre || row.province_name || row.provincia;
+        const codigo_provincia = row.codigo_provincia || row.codigoProvincia || row.province_code || row.provinceCode || row.codigo;
+        const canton = row.canton || row.canton_nombre || row.canton_name || row.nombre || row.nombre_canton;
+        const codigo_canton = row.codigo_canton || row.codigoCanton || row.canton_code || row.cantonCode;
 
-        if (!province_code || province_code.toString().trim() === '') {
-          return { isValid: false, error: `Row ${i + 2}: province_code is required`, data: null };
+        if (!provincia || provincia.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: provincia is required`, data: null };
         }
-        if (!canton_code || canton_code.toString().trim() === '') {
-          return { isValid: false, error: `Row ${i + 2}: canton_code is required`, data: null };
+        if (!codigo_provincia || codigo_provincia.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: codigo_provincia is required`, data: null };
         }
-        if (!canton_name || canton_name.toString().trim() === '') {
-          return { isValid: false, error: `Row ${i + 2}: canton_name is required`, data: null };
+        if (!canton || canton.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: canton is required`, data: null };
+        }
+        if (!codigo_canton || codigo_canton.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: codigo_canton is required`, data: null };
         }
 
         return {
           isValid: true,
           data: {
-            province_code: parseInt(province_code.toString().trim()),
-            canton_code: canton_code.toString().trim(),
-            canton_name: canton_name.toString().trim()
+            provincia: provincia.toString().trim(),
+            codigo_provincia: parseInt(codigo_provincia.toString().trim()),
+            canton: canton.toString().trim(),
+            codigo_canton: codigo_canton.toString().trim()
           }
         };
       };
@@ -3766,8 +3773,8 @@ app.post('/api/geography/:table/import', authenticateToken, requireAdmin, upload
           checkQuery = `SELECT id FROM ${tableName} WHERE codigo = $1`;
           checkParams = [data.codigo];
         } else if (table === 'cantons') {
-          checkQuery = `SELECT id FROM ${tableName} WHERE province_code = $1 AND canton_code = $2`;
-          checkParams = [data.province_code, data.canton_code];
+          checkQuery = `SELECT id FROM ${tableName} WHERE codigo_provincia = $1 AND codigo_canton = $2`;
+          checkParams = [data.codigo_provincia, data.codigo_canton];
         } else if (table === 'districts') {
           checkQuery = `SELECT id FROM ${tableName} WHERE province_code = $1 AND canton_code = $2 AND district_code = $3`;
           checkParams = [data.province_code, data.canton_code, data.district_code];
