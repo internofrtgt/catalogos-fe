@@ -1592,14 +1592,57 @@ app.delete('/api/catalogs/:catalogKey/clear', authenticateToken, requireAdmin, a
 
     const definition = catalogDefinitionsMap.get(catalogKey);
     if (!definition) {
-      return res.status(404).json({ message: 'Catalog not found' });
+      return res.status(404).json({
+        message: 'Catalog not found',
+        catalogKey,
+        availableCatalogs: Array.from(catalogDefinitionsMap.keys())
+      });
     }
 
     const tableName = definition.tableName;
+    console.log(`Attempting to clear table: ${tableName} for catalog: ${catalogKey}`);
+
+    // First, check if table exists
+    try {
+      const tableExists = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables
+          WHERE table_schema = 'public' AND table_name = $1
+        ) as exists
+      `, [tableName]);
+
+      if (!tableExists.rows[0].exists) {
+        return res.status(404).json({
+          message: 'Table does not exist',
+          catalogKey,
+          tableName
+        });
+      }
+    } catch (tableCheckError) {
+      console.error('Table check error:', tableCheckError);
+      return res.status(500).json({
+        message: 'Error checking table existence',
+        catalogKey,
+        tableName,
+        error: tableCheckError.message
+      });
+    }
 
     // Count records before deletion
-    const countResult = await pool.query(`SELECT COUNT(*) as count FROM ${tableName}`);
-    const recordCount = parseInt(countResult.rows[0].count);
+    let recordCount = 0;
+    try {
+      const countResult = await pool.query(`SELECT COUNT(*) as count FROM "${tableName}"`);
+      recordCount = parseInt(countResult.rows[0].count);
+      console.log(`Found ${recordCount} records in table ${tableName}`);
+    } catch (countError) {
+      console.error('Count query error:', countError);
+      return res.status(500).json({
+        message: 'Error counting records',
+        catalogKey,
+        tableName,
+        error: countError.message
+      });
+    }
 
     if (recordCount === 0) {
       return res.json({
@@ -1610,8 +1653,20 @@ app.delete('/api/catalogs/:catalogKey/clear', authenticateToken, requireAdmin, a
       });
     }
 
-    // Delete all records
-    const deleteResult = await pool.query(`DELETE FROM ${tableName}`);
+    // Delete all records with explicit table name
+    let deleteResult;
+    try {
+      deleteResult = await pool.query(`DELETE FROM "${tableName}"`);
+      console.log(`Deleted ${deleteResult.rowCount} records from ${tableName}`);
+    } catch (deleteError) {
+      console.error('Delete query error:', deleteError);
+      return res.status(500).json({
+        message: 'Error deleting records',
+        catalogKey,
+        tableName,
+        error: deleteError.message
+      });
+    }
 
     res.json({
       message: 'All records cleared successfully',
@@ -1625,7 +1680,9 @@ app.delete('/api/catalogs/:catalogKey/clear', authenticateToken, requireAdmin, a
     console.error('Clear catalog error:', error);
     res.status(500).json({
       message: 'Internal server error during clear operation',
-      error: error.message
+      catalogKey: req.params.catalogKey,
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
