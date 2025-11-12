@@ -223,7 +223,7 @@ function requireAdmin(req: express.Request & { user?: JwtPayload }, res: express
   next();
 }
 
-// Complete catalog definitions from original file
+// Complete catalog definitions with correct field types
 const catalogDefinitions: any[] = [
   {
     key: 'tipos-documento',
@@ -231,7 +231,7 @@ const catalogDefinitions: any[] = [
     tableName: 'tipos_documento',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'int', required: true },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -242,7 +242,7 @@ const catalogDefinitions: any[] = [
     tableName: 'situaciones_presentacion',
     fields: [
       { name: 'descripcion', type: 'string', required: true, length: 1024 },
-      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+      { name: 'codigo', type: 'int', required: true },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -264,7 +264,7 @@ const catalogDefinitions: any[] = [
     tableName: 'condiciones_venta',
     fields: [
       { name: 'descripcion', type: 'string', required: true, length: 1024 },
-      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -275,7 +275,7 @@ const catalogDefinitions: any[] = [
     tableName: 'tipos_identificacion',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -293,11 +293,11 @@ const catalogDefinitions: any[] = [
   },
   {
     key: 'tipos-codigo-ps',
-    label: 'Tipos de Código para P o S',
+    label: 'Tipos de Código para Producto o Servicio',
     tableName: 'tipos_codigo_ps',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -335,7 +335,7 @@ const catalogDefinitions: any[] = [
     tableName: 'tipos_transaccion',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -346,7 +346,7 @@ const catalogDefinitions: any[] = [
     tableName: 'tipos_descuento',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'int', required: true },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -357,7 +357,7 @@ const catalogDefinitions: any[] = [
     tableName: 'tipos_impuestos',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -368,7 +368,7 @@ const catalogDefinitions: any[] = [
     tableName: 'tarifas_iva',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'int', required: true },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -379,7 +379,7 @@ const catalogDefinitions: any[] = [
     tableName: 'tipos_documento_exoneracion',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -390,7 +390,7 @@ const catalogDefinitions: any[] = [
     tableName: 'instituciones_exoneracion',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'int', required: true },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -401,7 +401,7 @@ const catalogDefinitions: any[] = [
     tableName: 'tipos_otros_cargos',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'int', required: true },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -424,7 +424,7 @@ const catalogDefinitions: any[] = [
     tableName: 'medios_pago',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -435,7 +435,7 @@ const catalogDefinitions: any[] = [
     tableName: 'tipos_documento_referencia',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -446,7 +446,7 @@ const catalogDefinitions: any[] = [
     tableName: 'codigos_referencia',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -457,7 +457,7 @@ const catalogDefinitions: any[] = [
     tableName: 'mensajes_recepcion',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+      { name: 'codigo', type: 'int', required: true },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -468,7 +468,7 @@ const catalogDefinitions: any[] = [
     tableName: 'condiciones_impuesto',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+      { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -1720,6 +1720,343 @@ app.post('/api/actividades-economicas/clear', authenticateToken, requireAdmin, a
     console.error('Simple clear error:', error);
     res.status(500).json({
       message: 'Error clearing table',
+      error: error.message
+    });
+  }
+});
+
+// Unified endpoint to update all catalog and geography table schemas
+app.post('/api/schemas/update-all', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    console.log('Starting mass schema update operation...');
+
+    const results = [];
+
+    // Update all catalog schemas
+    for (const definition of catalogDefinitions) {
+      const tableName = definition.tableName;
+      console.log(`Processing catalog: ${definition.key} -> table: ${tableName}`);
+
+      try {
+        // Get current table structure
+        const tableStructure = await pool.query(`
+          SELECT column_name, data_type, numeric_precision, numeric_scale, character_maximum_length
+          FROM information_schema.columns
+          WHERE table_name = $1 AND table_schema = 'public'
+          ORDER BY ordinal_position
+        `, [tableName]);
+
+        const changes = [];
+
+        for (const field of definition.fields) {
+          const columnDef = tableStructure.rows.find(col => col.column_name === field.name);
+
+          if (!columnDef) {
+            console.log(`Column ${field.name} not found in table ${tableName}, skipping...`);
+            continue;
+          }
+
+          const currentType = `${columnDef.data_type}${
+            columnDef.numeric_precision ? `(${columnDef.numeric_precision}` : ''
+          }${columnDef.numeric_scale ? `,${columnDef.numeric_scale})` : ''
+          }${
+            columnDef.character_maximum_length ? `(${columnDef.character_maximum_length})` : ''
+          }`;
+
+          let desiredType = '';
+
+          if (field.type === 'string') {
+            desiredType = field.length ? `VARCHAR(${field.length})` : 'VARCHAR(50)';
+          } else if (field.type === 'int') {
+            desiredType = 'INTEGER';
+          } else if (field.type === 'numeric') {
+            desiredType = `NUMERIC(${field.precision || 12},${field.scale || 4})`;
+          }
+
+          if (currentType !== desiredType && desiredType) {
+            console.log(`Updating ${tableName}.${field.name} from ${currentType} to ${desiredType}`);
+
+            const alterQuery = field.type === 'string'
+              ? `ALTER TABLE ${tableName} ALTER COLUMN ${field.name} TYPE ${desiredType} USING ${field.name}::${desiredType}`
+              : `ALTER TABLE ${tableName} ALTER COLUMN ${field.name} TYPE ${desiredType}`;
+
+            await pool.query(alterQuery);
+
+            changes.push({
+              column: field.name,
+              from: currentType,
+              to: desiredType
+            });
+          }
+        }
+
+        if (changes.length > 0) {
+          results.push({
+            catalogKey: definition.key,
+            tableName,
+            changes: changes,
+            status: 'updated'
+          });
+        } else {
+          results.push({
+            catalogKey: definition.key,
+            tableName,
+            changes: [],
+            status: 'up_to_date'
+          });
+        }
+
+      } catch (catalogError) {
+        console.error(`Error updating catalog ${definition.key}:`, catalogError);
+        results.push({
+          catalogKey: definition.key,
+          tableName,
+          status: 'error',
+          error: catalogError.message
+        });
+      }
+    }
+
+    // Update geography table schemas if needed
+    const geographyTables = [
+      {
+        key: 'provincias',
+        tableName: 'provincias',
+        fields: [
+          { name: 'codigo', type: 'int', required: true },
+        ]
+      },
+      {
+        key: 'cantones',
+        tableName: 'cantones',
+        fields: [
+          { name: 'province_code', type: 'int', required: true },
+          { name: 'codigo', type: 'string', required: true, length: 50 }
+        ]
+      },
+      {
+        key: 'distritos',
+        tableName: 'distritos',
+        fields: [
+          { name: 'province_code', type: 'int', required: true },
+          { name: 'canton_code', type: 'string', required: true, length: 50 },
+          { name: 'codigo', type: 'string', required: true, length: 50 }
+        ]
+      },
+      {
+        key: 'barrios',
+        tableName: 'barrios',
+        fields: [
+          { name: 'province_code', type: 'int', required: true },
+          { name: 'canton_code', type: 'string', required: true, length: 50 },
+          { name: 'district_code', type: 'string', required: true, length: 50 },
+          { name: 'nombre', type: 'string', required: true }
+        ]
+      }
+    ];
+
+    for (const table of geographyTables) {
+      try {
+        const tableStructure = await pool.query(`
+          SELECT column_name, data_type, numeric_precision, numeric_scale, character_maximum_length
+          FROM information_schema.columns
+          WHERE table_name = $1 AND table_schema = 'public'
+          ORDER BY ordinal_position
+        `, [table.tableName]);
+
+        const changes = [];
+
+        for (const field of table.fields) {
+          const columnDef = tableStructure.rows.find(col => col.column_name === field.name);
+
+          if (!columnDef) continue;
+
+          const currentType = `${columnDef.data_type}${
+            columnDef.numeric_precision ? `(${columnDef.numeric_precision})` : ''
+          }${columnDef.numeric_scale ? `,${columnDef.numeric_scale})` : ''
+          }${
+            columnDef.character_maximum_length ? `(${columnDef.character_maximum_length})` : ''
+          }`;
+
+          let desiredType = '';
+
+          if (field.type === 'string') {
+            desiredType = field.length ? `VARCHAR(${field.length})` : 'VARCHAR(50)';
+          } else if (field.type === 'int') {
+            desiredType = 'INTEGER';
+          }
+
+          if (currentType !== desiredType && desiredType) {
+            console.log(`Updating geography ${table.tableName}.${field.name} from ${currentType} to ${desiredType}`);
+
+            const alterQuery = field.type === 'string'
+              ? `ALTER TABLE ${table.tableName} ALTER COLUMN ${field.name} TYPE ${desiredType} USING ${field.name}::${desiredType}`
+              : `ALTER TABLE ${table.tableName} ALTER COLUMN ${field.name} TYPE ${desiredType}`;
+
+            await pool.query(alterQuery);
+
+            changes.push({
+              column: field.name,
+              from: currentType,
+              to: desiredType
+            });
+          }
+        }
+
+        if (changes.length > 0) {
+          results.push({
+            catalogKey: table.key,
+            tableName: table.tableName,
+            changes: changes,
+            status: 'updated',
+            type: 'geography'
+          });
+        }
+
+      } catch (geoError) {
+        console.error(`Error updating geography table ${table.tableName}:`, geoError);
+        results.push({
+          catalogKey: table.key,
+          tableName: table.tableName,
+          status: 'error',
+          error: geoError.message,
+          type: 'geography'
+        });
+      }
+    }
+
+    const successCount = results.filter(r => r.status === 'updated' || r.status === 'up_to_date').length;
+    const errorCount = results.filter(r => r.status === 'error').length;
+
+    res.json({
+      message: 'Schema update operation completed',
+      summary: {
+        total: results.length,
+        success: successCount,
+        errors: errorCount
+      },
+      results: results
+    });
+
+  } catch (error) {
+    console.error('Update all schemas error:', error);
+    res.status(500).json({
+      message: 'Internal server error during mass schema update',
+      error: error.message
+    });
+  }
+});
+
+// Endpoint to clear all catalog and geography data
+app.delete('/api/clear-all', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    console.log('Starting mass data clearing operation...');
+
+    const results = [];
+    let totalDeleted = 0;
+
+    // Clear all catalog tables
+    for (const definition of catalogDefinitions) {
+      const tableName = definition.tableName;
+
+      try {
+        // Count records first
+        const countResult = await pool.query(`SELECT COUNT(*) as count FROM "${tableName}"`);
+        const recordCount = parseInt(countResult.rows[0].count);
+
+        if (recordCount > 0) {
+          const deleteResult = await pool.query(`DELETE FROM "${tableName}"`);
+          console.log(`Deleted ${deleteResult.rowCount} records from ${tableName}`);
+
+          totalDeleted += deleteResult.rowCount;
+
+          results.push({
+            catalogKey: definition.key,
+            tableName,
+            recordsDeleted: deleteResult.rowCount,
+            status: 'cleared'
+          });
+        } else {
+          results.push({
+            catalogKey: definition.key,
+            tableName,
+            recordsDeleted: 0,
+            status: 'already_empty'
+          });
+        }
+
+      } catch (catalogError) {
+        console.error(`Error clearing catalog ${definition.key}:`, catalogError);
+        results.push({
+          catalogKey: definition.key,
+          tableName,
+          status: 'error',
+          error: catalogError.message
+        });
+      }
+    }
+
+    // Clear geography tables
+    const geographyTables = ['provincias', 'cantones', 'distritos', 'barrios'];
+
+    for (const tableName of geographyTables) {
+      try {
+        const countResult = await pool.query(`SELECT COUNT(*) as count FROM "${tableName}"`);
+        const recordCount = parseInt(countResult.rows[0].count);
+
+        if (recordCount > 0) {
+          const deleteResult = await pool.query(`DELETE FROM "${tableName}"`);
+          console.log(`Deleted ${deleteResult.rowCount} records from ${tableName}`);
+
+          totalDeleted += deleteResult.rowCount;
+
+          results.push({
+            catalogKey: tableName,
+            tableName,
+            recordsDeleted: deleteResult.rowCount,
+            status: 'cleared',
+            type: 'geography'
+          });
+        } else {
+          results.push({
+            catalogKey: tableName,
+            tableName,
+            recordsDeleted: 0,
+            status: 'already_empty',
+            type: 'geography'
+          });
+        }
+
+      } catch (geoError) {
+        console.error(`Error clearing geography table ${tableName}:`, geoError);
+        results.push({
+          catalogKey: tableName,
+          tableName,
+          status: 'error',
+          error: geoError.message,
+          type: 'geography'
+        });
+      }
+    }
+
+    const successCount = results.filter(r => r.status === 'cleared').length;
+    const errorCount = results.filter(r => r.status === 'error').length;
+
+    res.json({
+      message: 'Mass clear operation completed',
+      summary: {
+        total: results.length,
+        success: successCount,
+        errors: errorCount,
+        totalRecordsDeleted: totalDeleted
+      },
+      results: results
+    });
+
+  } catch (error) {
+    console.error('Clear all data error:', error);
+    res.status(500).json({
+      message: 'Internal server error during mass clear operation',
       error: error.message
     });
   }
