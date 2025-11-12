@@ -5,7 +5,8 @@
       "src": "backoffice-api/src/api.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": "backoffice-api/**"
+        "includeFiles": "backoffice-api/src/**",
+        "maxLambdaSize": "50mb"
       }
     },
     {
