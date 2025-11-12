@@ -824,6 +824,196 @@ app.get('/api/geography/provinces', authenticateToken, async (req, res) => {
   }
 });
 
+// General cantons endpoint (all cantons)
+app.get('/api/geography/cantons', authenticateToken, async (req, res) => {
+  try {
+    const { search, page = 1, limit = 50, provinceCode } = req.query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
+
+    let query = 'SELECT * FROM cantones';
+    const params: any[] = [];
+
+    if (provinceCode) {
+      query += ' WHERE province_code = $1';
+      params.push(provinceCode);
+    }
+
+    if (search) {
+      const paramIndex = params.length + 1;
+      const searchCondition = provinceCode
+        ? ` AND (CAST(nombre AS TEXT) ILIKE $${paramIndex} OR CAST(codigo AS TEXT) ILIKE $${paramIndex} OR CAST(provincia_nombre AS TEXT) ILIKE $${paramIndex})`
+        : ` WHERE (CAST(nombre AS TEXT) ILIKE $1 OR CAST(codigo AS TEXT) ILIKE $1 OR CAST(provincia_nombre AS TEXT) ILIKE $1)`;
+      query += searchCondition;
+      params.push(`%${search}%`);
+    }
+
+    const countQuery = search
+      ? `SELECT COUNT(*) FROM cantones${provinceCode ? ' WHERE province_code = $1' : ''}${provinceCode && search ? ' AND (CAST(nombre AS TEXT) ILIKE $2 OR CAST(codigo AS TEXT) ILIKE $2 OR CAST(provincia_nombre AS TEXT) ILIKE $2)' : search && !provinceCode ? ' WHERE (CAST(nombre AS TEXT) ILIKE $1 OR CAST(codigo AS TEXT) ILIKE $1 OR CAST(provincia_nombre AS TEXT) ILIKE $1)' : ''}`
+      : `SELECT COUNT(*) FROM cantons${provinceCode ? ' WHERE province_code = $1' : ''}`;
+
+    query += ' ORDER BY province_code ASC, codigo ASC';
+    const offset = (pageNumber - 1) * limitNumber;
+    query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
+
+    const [itemsResult, countResult] = await Promise.all([
+      pool.query(query, params),
+      pool.query(countQuery, params)
+    ]);
+
+    res.json({
+      data: itemsResult.rows,
+      meta: {
+        total: Number(countResult.rows[0].count),
+        page: pageNumber,
+        limit: limitNumber
+      }
+    });
+  } catch (error) {
+    console.error('Get all cantons error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// General districts endpoint (all districts)
+app.get('/api/geography/districts', authenticateToken, async (req, res) => {
+  try {
+    const { search, page = 1, limit = 50, provinceCode, cantonCode } = req.query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
+
+    let query = 'SELECT * FROM distritos';
+    const params: any[] = [];
+
+    if (provinceCode) {
+      query += ' WHERE province_code = $1';
+      params.push(provinceCode);
+    }
+
+    if (cantonCode) {
+      const condition = provinceCode ? ' AND canton_code = $2' : ' WHERE canton_code = $1';
+      query += condition;
+      params.push(cantonCode);
+    }
+
+    if (search) {
+      const paramIndex = params.length + 1;
+      const searchCondition = (provinceCode || cantonCode)
+        ? ` AND (CAST(nombre AS TEXT) ILIKE $${paramIndex} OR CAST(codigo AS TEXT) ILIKE $${paramIndex} OR CAST(provincia_nombre AS TEXT) ILIKE $${paramIndex} OR CAST(canton_nombre AS TEXT) ILIKE $${paramIndex})`
+        : ` WHERE (CAST(nombre AS TEXT) ILIKE $1 OR CAST(codigo AS TEXT) ILIKE $1 OR CAST(provincia_nombre AS TEXT) ILIKE $1 OR CAST(canton_nombre AS TEXT) ILIKE $1)`;
+      query += searchCondition;
+      params.push(`%${search}%`);
+    }
+
+    const countQuery = `SELECT COUNT(*) FROM distritos${provinceCode ? ' WHERE province_code = $1' : ''}${cantonCode ? (provinceCode ? ' AND canton_code = $2' : ' WHERE canton_code = $1') : ''}${search ? ((provinceCode || cantonCode) ? ' AND (CAST(nombre AS TEXT) ILIKE $' + (params.length) + ' OR CAST(codigo AS TEXT) ILIKE $' + (params.length) + ' OR CAST(provincia_nombre AS TEXT) ILIKE $' + (params.length) + ' OR CAST(canton_nombre AS TEXT) ILIKE $' + (params.length) + ')' : ' WHERE (CAST(nombre AS TEXT) ILIKE $1 OR CAST(codigo AS TEXT) ILIKE $1 OR CAST(provincia_nombre AS TEXT) ILIKE $1 OR CAST(canton_nombre AS TEXT) ILIKE $1)') : ''}`;
+
+    query += ' ORDER BY province_code ASC, canton_code ASC, codigo ASC';
+    const offset = (pageNumber - 1) * limitNumber;
+    query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
+
+    const [itemsResult, countResult] = await Promise.all([
+      pool.query(query, params),
+      pool.query(countQuery, params)
+    ]);
+
+    res.json({
+      data: itemsResult.rows,
+      meta: {
+        total: Number(countResult.rows[0].count),
+        page: pageNumber,
+        limit: limitNumber
+      }
+    });
+  } catch (error) {
+    console.error('Get all districts error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// General barrios endpoint (all barrios)
+app.get('/api/geography/barrios', authenticateToken, async (req, res) => {
+  try {
+    const { search, page = 1, limit = 50, provinceCode, cantonCode, districtName } = req.query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
+
+    let query = 'SELECT * FROM barrios';
+    const params: any[] = [];
+
+    if (provinceCode) {
+      query += ' WHERE province_code = $1';
+      params.push(provinceCode);
+    }
+
+    if (cantonCode) {
+      const condition = provinceCode ? ' AND canton_code = $2' : ' WHERE canton_code = $1';
+      query += condition;
+      params.push(cantonCode);
+    }
+
+    if (districtName) {
+      const paramIndex = params.length + 1;
+      const condition = (provinceCode || cantonCode) ? ` AND LOWER(district_name) = $${paramIndex}` : ' WHERE LOWER(district_name) = $1';
+      query += condition;
+      params.push(String(districtName).toLowerCase());
+    }
+
+    if (search) {
+      const paramIndex = params.length + 1;
+      const searchCondition = (provinceCode || cantonCode || districtName)
+        ? ` AND (CAST(nombre AS TEXT) ILIKE $${paramIndex} OR CAST(district_name AS TEXT) ILIKE $${paramIndex} OR CAST(canton_nombre AS TEXT) ILIKE $${paramIndex} OR CAST(provincia_nombre AS TEXT) ILIKE $${paramIndex})`
+        : ` WHERE (CAST(nombre AS TEXT) ILIKE $1 OR CAST(district_name AS TEXT) ILIKE $1 OR CAST(canton_nombre AS TEXT) ILIKE $1 OR CAST(provincia_nombre AS TEXT) ILIKE $1)`;
+      query += searchCondition;
+      params.push(`%${search}%`);
+    }
+
+    // Build count query
+    let countQuery = 'SELECT COUNT(*) FROM barrios';
+    const countParams = [...params];
+
+    if (provinceCode) {
+      countQuery += ' WHERE province_code = $1';
+    }
+    if (cantonCode) {
+      countQuery += provinceCode ? ' AND canton_code = $2' : ' WHERE canton_code = $1';
+    }
+    if (districtName) {
+      const paramIndex = (provinceCode ? 1 : 0) + (cantonCode ? 1 : 0) + 1;
+      countQuery += (provinceCode || cantonCode) ? ` AND LOWER(district_name) = $${paramIndex}` : ' WHERE LOWER(district_name) = $1';
+    }
+    if (search) {
+      const paramIndex = countParams.length;
+      countQuery += (provinceCode || cantonCode || districtName)
+        ? ` AND (CAST(nombre AS TEXT) ILIKE $${paramIndex} OR CAST(district_name AS TEXT) ILIKE $${paramIndex} OR CAST(canton_nombre AS TEXT) ILIKE $${paramIndex} OR CAST(provincia_nombre AS TEXT) ILIKE $${paramIndex})`
+        : ` WHERE (CAST(nombre AS TEXT) ILIKE $1 OR CAST(district_name AS TEXT) ILIKE $1 OR CAST(canton_nombre AS TEXT) ILIKE $1 OR CAST(provincia_nombre AS TEXT) ILIKE $1)`;
+    }
+
+    query += ' ORDER BY province_code ASC, canton_code ASC, district_name ASC, nombre ASC';
+    const offset = (pageNumber - 1) * limitNumber;
+    query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
+
+    const [itemsResult, countResult] = await Promise.all([
+      pool.query(query, params),
+      pool.query(countQuery, countParams)
+    ]);
+
+    res.json({
+      data: itemsResult.rows,
+      meta: {
+        total: Number(countResult.rows[0].count),
+        page: pageNumber,
+        limit: limitNumber
+      }
+    });
+  } catch (error) {
+    console.error('Get all barrios error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 app.get('/api/geography/provinces/:provinceCode/cantons', authenticateToken, async (req, res) => {
   try {
     const { provinceCode } = req.params;
