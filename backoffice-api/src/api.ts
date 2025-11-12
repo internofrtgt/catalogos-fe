@@ -1529,6 +1529,499 @@ app.post('/api/geography/seed', authenticateToken, requireAdmin, async (req, res
   }
 });
 
+// Initialize API documentation with comprehensive endpoint information
+app.post('/api/api-docs/seed', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    // Check if documentation already exists
+    const existingDocs = await pool.query('SELECT COUNT(*) as count FROM api_documents');
+    if (parseInt(existingDocs.rows[0].count) > 0) {
+      return res.json({ message: 'API documentation already exists' });
+    }
+
+    const documentation = [
+      {
+        title: 'Authentication API',
+        version: 'v1.0.0',
+        summary: 'Authentication and authorization endpoints',
+        content: `# Authentication API
+
+## Overview
+API endpoints for user authentication, token management, and user session handling.
+
+## Authentication
+All protected endpoints require a valid JWT token in the Authorization header:
+\`Authorization: Bearer <jwt_token>\`
+
+## Endpoints
+
+### POST /api/auth/login
+Authenticates a user and returns a JWT token.
+
+**Request Body:**
+\`\`\`json
+{
+  "username": "string",
+  "password": "string"
+}
+\`\`\`
+
+**Response:**
+\`\`\`json
+{
+  "accessToken": "jwt_token_string",
+  "user": {
+    "id": "uuid",
+    "username": "string",
+    "role": "ADMIN|OPERATOR"
+  }
+}
+\`\`\`
+
+### GET /api/auth/me
+Gets current user information from JWT token.
+
+**Headers:** \`Authorization: Bearer <jwt_token>\`
+
+**Response:**
+\`\`\`json
+{
+  "id": "uuid",
+  "username": "string",
+  "role": "ADMIN|OPERATOR"
+}
+\`\`\`
+
+## Error Codes
+- 400: Missing username/password
+- 401: Invalid credentials or token
+- 500: Internal server error`
+      },
+      {
+        title: 'Catalogs API',
+        version: 'v1.0.0',
+        summary: 'Complete CRUD operations for tax catalogs and reference data',
+        content: `# Catalogs API
+
+## Overview
+Complete CRUD operations for 21 tax catalogs and reference data used in Costa Rican fiscal systems.
+
+## Available Catalogs
+- tipos-documento (Document Types)
+- situaciones-presentacion (Presentation Situations)
+- actividades-economicas (Economic Activities)
+- condiciones-venta (Sale Conditions)
+- tipos-identificacion (Identification Types)
+- formas-farmaceuticas (Pharmaceutical Forms)
+- tipos-codigo-ps (P/S Code Types)
+- unidades-medida (Measurement Units)
+- tipos-transaccion (Transaction Types)
+- tipos-descuento (Discount Types)
+- tipos-impuestos (Tax Types)
+- tarifas-iva (VAT Rates)
+- tipos-documento-exoneracion (Exemption Document Types)
+- instituciones-exoneracion (Exemption Institutions)
+- tipos-otros-cargos (Other Charges Types)
+- codigos-moneda (Currency Codes)
+- medios-pago (Payment Methods)
+- tipos-documento-referencia (Reference Document Types)
+- codigos-referencia (Reference Codes)
+- mensajes-recepcion (Reception Messages)
+- condiciones-impuesto (Tax Conditions)
+
+## Endpoints
+
+### GET /api/catalogs
+Lists all available catalog definitions.
+
+**Response:**
+\`\`\`json
+[
+  {
+    "key": "tipos-documento",
+    "label": "Tipos de Documentos",
+    "tableName": "tipos_documento",
+    "fields": [...],
+    "uniqueBy": ["codigo"],
+    "searchFields": ["descripcion", "codigo"]
+  }
+]
+\`\`\`
+
+### GET /api/catalogs/{catalogKey}
+Gets paginated items from a specific catalog.
+
+**Query Parameters:**
+- search: Search term (optional)
+- page: Page number (default: 1)
+- limit: Items per page (default: 50, max: 200)
+
+**Response:**
+\`\`\`json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "descripcion": "Cédula Física",
+      "codigo": 1,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "total": 50,
+    "page": 1,
+    "limit": 50
+  }
+}
+\`\`\`
+
+### GET /api/catalogs/{catalogKey}/{id}
+Gets a specific catalog item by ID.
+
+### POST /api/catalogs/{catalogKey}
+Creates a new catalog item (Admin only).
+
+### PUT /api/catalogs/{catalogKey}/{id}
+Updates an existing catalog item (Admin only).
+
+### DELETE /api/catalogs/{catalogKey}/{id}
+Deletes a catalog item (Admin only).
+
+## Error Codes
+- 400: Validation error
+- 401: Authentication required
+- 403: Admin role required
+- 404: Catalog not found
+- 500: Internal server error`
+      },
+      {
+        title: 'Geography API',
+        version: 'v1.0.0',
+        summary: 'Costa Rica geographic data management - provinces, cantons, districts, and neighborhoods',
+        content: `# Geography API
+
+## Overview
+Complete geographic data management for Costa Rica including provinces, cantons, districts, and neighborhoods (barrios).
+
+## Data Structure
+- **Provincias**: 7 provinces of Costa Rica
+- **Cantones**: Municipalities within provinces
+- **Distritos**: Districts within cantons
+- **Barrios**: Neighborhoods within districts
+
+## Endpoints
+
+### GET /api/geography/provinces
+Lists all provinces with pagination and search.
+
+**Query Parameters:**
+- search: Search term (optional)
+- page: Page number (default: 1)
+- limit: Items per page (default: 50, max: 200)
+
+**Response:**
+\`\`\`json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "nombre": "San José",
+      "codigo": 1,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "total": 7,
+    "page": 1,
+    "limit": 50
+  }
+}
+\`\`\`
+
+### GET /api/geography/cantons
+Lists all cantons with optional filtering.
+
+**Query Parameters:**
+- search: Search term (optional)
+- provinceCode: Filter by province code (optional)
+- page: Page number
+- limit: Items per page
+
+### GET /api/geography/districts
+Lists all districts with optional filtering.
+
+**Query Parameters:**
+- search: Search term (optional)
+- provinceCode: Filter by province code (optional)
+- cantonCode: Filter by canton code (optional)
+- page: Page number
+- limit: Items per page
+
+### GET /api/geography/barrios
+Lists all neighborhoods with optional filtering.
+
+**Query Parameters:**
+- search: Search term (optional)
+- provinceCode: Filter by province code (optional)
+- cantonCode: Filter by canton code (optional)
+- districtName: Filter by district name (optional)
+- page: Page number
+- limit: Items per page
+
+### GET /api/geography/provinces/{provinceCode}/cantons
+Gets cantons for a specific province.
+
+### GET /api/geography/provinces/{provinceCode}/cantons/{cantonCode}/districts
+Gets districts for specific province and canton.
+
+### GET /api/geography/districts/{districtId}/barrios
+Gets neighborhoods for a specific district.
+
+### GET /api/geography/cantons/{cantonId}/barrios
+Gets neighborhoods for a specific canton.
+
+### POST /api/geography/seed
+Initializes Costa Rica provinces data (Admin only).
+
+## Error Codes
+- 400: Invalid parameters
+- 401: Authentication required
+- 403: Admin role required
+- 404: Geographic entity not found
+- 500: Internal server error`
+      },
+      {
+        title: 'Users Management API',
+        version: 'v1.0.0',
+        summary: 'User management operations for administrators',
+        content: `# Users Management API
+
+## Overview
+Complete CRUD operations for user management. Only administrators can access these endpoints.
+
+## Roles
+- **ADMIN**: Full access to all endpoints and user management
+- **OPERATOR**: Limited access to specific operations
+
+## Endpoints
+
+### GET /api/users
+Lists all users with pagination and search (Admin only).
+
+**Headers:** \`Authorization: Bearer <jwt_token>\`
+
+**Query Parameters:**
+- search: Search by username (optional)
+- page: Page number (default: 1)
+- limit: Items per page (default: 20, max: 100)
+
+**Response:**
+\`\`\`json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "username": "admin",
+      "role": "ADMIN",
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-01T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "limit": 20
+  }
+}
+\`\`\`
+
+### GET /api/users/{id}
+Gets a specific user by ID (Admin only).
+
+### POST /api/users
+Creates a new user (Admin only).
+
+**Request Body:**
+\`\`\`json
+{
+  "username": "string",
+  "password": "string",
+  "role": "ADMIN|OPERATOR",
+  "isActive": true
+}
+\`\`\`
+
+**Response:**
+\`\`\`json
+{
+  "id": "uuid",
+  "username": "newuser",
+  "role": "OPERATOR",
+  "isActive": true,
+  "createdAt": "2025-01-01T00:00:00Z",
+  "updatedAt": "2025-01-01T00:00:00Z"
+}
+\`\`\`
+
+### PUT /api/users/{id}
+Updates an existing user (Admin only).
+
+**Request Body:**
+\`\`\`json
+{
+  "username": "string",
+  "password": "string",
+  "role": "ADMIN|OPERATOR",
+  "isActive": true
+}
+\`\`\`
+
+### DELETE /api/users/{id}
+Deletes a user (Admin only).
+**Note:** Users cannot delete their own account.
+
+## Password Security
+- All passwords are hashed using bcrypt with 12 rounds
+- Passwords are never stored in plain text
+- Minimum password length should be enforced at application level
+
+## Error Codes
+- 400: Invalid input data
+- 401: Authentication required
+- 403: Admin role required
+- 404: User not found
+- 409: Username already exists
+- 500: Internal server error`
+      },
+      {
+        title: 'API Documentation System',
+        version: 'v1.0.0',
+        summary: 'Self-documenting API system for external integrations',
+        content: `# API Documentation System
+
+## Overview
+This system provides comprehensive API documentation for external integrations and developers.
+
+## Purpose
+- Enable external systems to discover available endpoints
+- Provide detailed specifications for each API
+- Support version management and updates
+- Facilitate seamless integration development
+
+## Documentation Structure
+Each API document contains:
+- **title**: Human-readable name
+- **version**: Semantic version (v1.0.0)
+- **summary**: Brief description
+- **content**: Full Markdown documentation
+
+## Endpoints
+
+### GET /api/api-docs
+Lists all available API documentation.
+
+**Response:**
+\`\`\`json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "title": "Authentication API",
+      "version": "v1.0.0",
+      "summary": "Authentication endpoints",
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-01T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "total": 5,
+    "page": 1,
+    "limit": 20
+  }
+}
+\`\`\`
+
+### GET /api/api-docs/{id}
+Gets complete documentation for a specific API.
+
+### POST /api/api-docs
+Creates new API documentation (Admin only).
+
+### PUT /api/api-docs/{id}
+Updates API documentation (Admin only).
+
+### DELETE /api/api-docs/{id}
+Deletes API documentation (Admin only).
+
+### POST /api/api-docs/seed
+Initializes the system with default API documentation (Admin only).
+
+## Usage for External Integrations
+
+### 1. Discovery
+\`\`\`bash
+curl -H "Authorization: Bearer <token>" \\
+     https://api.example.com/api/api-docs
+\`\`\`
+
+### 2. Get Specific API Documentation
+\`\`\`bash
+curl -H "Authorization: Bearer <token>" \\
+     https://api.example.com/api/api-docs/{document-id}
+\`\`\`
+
+### 3. Implement Integration
+Use the retrieved documentation to implement API clients with proper:
+- Endpoint URLs
+- Request/response formats
+- Authentication requirements
+- Error handling
+- Rate limiting considerations
+
+## Version Management
+- Each API can have multiple versions
+- Version format: v{major}.{minor}.{patch}
+- Backward compatibility is maintained when possible
+- Breaking changes require major version increment
+
+## Best Practices
+- Always check for latest documentation version
+- Handle authentication errors gracefully
+- Implement proper error handling for all API calls
+- Respect rate limits and API quotas
+- Use appropriate HTTP methods for operations
+
+## Error Codes
+- 400: Invalid request data
+- 401: Authentication required
+- 403: Admin role required
+- 404: Documentation not found
+- 409: Duplicate title+version
+- 500: Internal server error`
+      }
+    ];
+
+    for (const doc of documentation) {
+      await pool.query(
+        `INSERT INTO api_documents (title, version, summary, content, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+        [doc.title, doc.version, doc.summary, doc.content]
+      );
+    }
+
+    res.json({
+      message: 'API documentation seeded successfully',
+      documentsInserted: documentation.length,
+      documents: documentation.map(d => ({ title: d.title, version: d.version }))
+    });
+  } catch (error) {
+    console.error('Seed API docs error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // API Documentation endpoints
 app.get('/api/api-docs', authenticateToken, async (req, res) => {
   try {
