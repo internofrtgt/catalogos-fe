@@ -1730,7 +1730,7 @@ app.post('/api/schemas/update-all', authenticateToken, requireAdmin, async (req,
   try {
     console.log('Starting mass schema update operation...');
 
-    const results = [];
+    const results: any[] = [];
 
     // Update all catalog schemas
     for (const definition of catalogDefinitions) {
@@ -1746,7 +1746,7 @@ app.post('/api/schemas/update-all', authenticateToken, requireAdmin, async (req,
           ORDER BY ordinal_position
         `, [tableName]);
 
-        const changes = [];
+        const changes: any[] = [];
 
         for (const field of definition.fields) {
           const columnDef = tableStructure.rows.find(col => col.column_name === field.name);
@@ -1864,7 +1864,7 @@ app.post('/api/schemas/update-all', authenticateToken, requireAdmin, async (req,
           ORDER BY ordinal_position
         `, [table.tableName]);
 
-        const changes = [];
+        const changes: any[] = [];
 
         for (const field of table.fields) {
           const columnDef = tableStructure.rows.find(col => col.column_name === field.name);
@@ -1952,7 +1952,7 @@ app.delete('/api/clear-all', authenticateToken, requireAdmin, async (req, res) =
   try {
     console.log('Starting mass data clearing operation...');
 
-    const results = [];
+    const results: any[] = [];
     let totalDeleted = 0;
 
     // Clear all catalog tables
