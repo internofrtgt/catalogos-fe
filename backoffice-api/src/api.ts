@@ -2461,8 +2461,11 @@ app.get('/api/geography/districts', authenticateToken, async (req, res) => {
       pool.query(countQuery, countParams)
     ]);
 
+    // Transform database row keys from snake_case to camelCase for frontend compatibility
+    const transformedData = itemsResult.rows.map(row => transformRowKeys(row));
+
     res.json({
-      data: itemsResult.rows,
+      data: transformedData,
       meta: {
         total: Number(countResult.rows[0].count),
         page: pageNumber,
@@ -2632,8 +2635,11 @@ app.get('/api/geography/provinces/:provinceCode/cantons/:cantonCode/districts', 
       pool.query(countQuery, params)
     ]);
 
+    // Transform database row keys from snake_case to camelCase for frontend compatibility
+    const transformedData = itemsResult.rows.map(row => transformRowKeys(row));
+
     res.json({
-      data: itemsResult.rows,
+      data: transformedData,
       meta: {
         total: Number(countResult.rows[0].count),
         page: pageNumber,
