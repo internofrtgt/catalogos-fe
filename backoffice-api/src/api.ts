@@ -2422,23 +2422,23 @@ app.get('/api/geography/districts', authenticateToken, async (req, res) => {
     const whereConditions: string[] = [];
 
     if (provinceCode) {
-      whereConditions.push('province_code = $' + (params.length + 1));
+      whereConditions.push('codigo_provincia = $' + (params.length + 1));
       params.push(provinceCode);
       countParams.push(provinceCode);
     }
 
     if (cantonCode) {
-      whereConditions.push('canton_code = $' + (params.length + 1));
+      whereConditions.push('codigo_canton = $' + (params.length + 1));
       params.push(cantonCode);
       countParams.push(cantonCode);
     }
 
     if (search) {
       const searchConditions = [
-        'CAST(nombre AS TEXT) ILIKE $' + (params.length + 1),
-        'CAST(codigo AS TEXT) ILIKE $' + (params.length + 1),
-        'CAST(provincia_nombre AS TEXT) ILIKE $' + (params.length + 1),
-        'CAST(canton_nombre AS TEXT) ILIKE $' + (params.length + 1)
+        'CAST(distrito AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(codigo_distrito AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(provincia AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(canton AS TEXT) ILIKE $' + (params.length + 1)
       ];
       whereConditions.push('(' + searchConditions.join(' OR ') + ')');
       params.push(`%${search}%`);
@@ -2452,7 +2452,7 @@ app.get('/api/geography/districts', authenticateToken, async (req, res) => {
       countQuery += whereClause;
     }
 
-    query += ' ORDER BY province_code ASC, canton_code ASC, codigo ASC';
+    query += ' ORDER BY codigo_provincia ASC, codigo_canton ASC, codigo_distrito ASC';
     const offset = (pageNumber - 1) * limitNumber;
     query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
 

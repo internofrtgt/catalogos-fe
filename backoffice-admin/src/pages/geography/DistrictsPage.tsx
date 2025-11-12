@@ -27,17 +27,17 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { GeoImportDialog } from '../../components/geography/GeoImportDialog';
 
 const districtFields: CatalogFieldConfig[] = [
-  { name: 'provinciaNombre', label: 'Provincia', type: 'string', required: true },
-  { name: 'provinceCode', label: 'Codigo Provincia', type: 'int', required: true },
-  { name: 'cantonNombre', label: 'Canton', type: 'string', required: true },
-  { name: 'cantonCode', label: 'Codigo Canton', type: 'int', required: true },
-  { name: 'nombre', label: 'Distrito', type: 'string', required: true },
-  { name: 'codigo', label: 'Codigo Distrito', type: 'int', required: true },
+  { name: 'provincia', label: 'Provincia', type: 'string', required: true },
+  { name: 'codigoProvincia', label: 'Codigo Provincia', type: 'int', required: true },
+  { name: 'canton', label: 'Canton', type: 'string', required: true },
+  { name: 'codigoCanton', label: 'Codigo Canton', type: 'string', required: true },
+  { name: 'distrito', label: 'Distrito', type: 'string', required: true },
+  { name: 'codigoDistrito', label: 'Codigo Distrito', type: 'string', required: true },
 ];
 
 export const DistrictsPage = () => {
   const [params, setParams] = useState<
-    CatalogListParams & { provinceCode?: number; cantonCode?: number }
+    CatalogListParams & { codigoProvincia?: number; codigoCanton?: string }
   >({
     page: 1,
     limit: 10,
@@ -56,8 +56,8 @@ export const DistrictsPage = () => {
         page: params.page,
         limit: params.limit,
         search: params.search,
-        provinceCode: params.provinceCode,
-        cantonCode: params.cantonCode,
+        provinceCode: params.codigoProvincia,
+        cantonCode: params.codigoCanton ? Number(params.codigoCanton) : undefined,
       }),
   });
 
@@ -130,13 +130,13 @@ export const DistrictsPage = () => {
         />
         <TextField
           placeholder="Codigo provincia"
-          value={params.provinceCode?.toString() ?? ''}
+          value={params.codigoProvincia?.toString() ?? ''}
           onChange={(event) => {
             const value = event.target.value;
             setParams((prev) => ({
               ...prev,
               page: 1,
-              provinceCode: value ? Number(value) : undefined,
+              codigoProvincia: value ? Number(value) : undefined,
             }));
           }}
           size="small"
@@ -144,13 +144,13 @@ export const DistrictsPage = () => {
         />
         <TextField
           placeholder="Codigo canton"
-          value={params.cantonCode?.toString() ?? ''}
+          value={params.codigoCanton?.toString() ?? ''}
           onChange={(event) => {
             const value = event.target.value;
             setParams((prev) => ({
               ...prev,
               page: 1,
-              cantonCode: value ? Number(value) : undefined,
+              codigoCanton: value || undefined,
             }));
           }}
           size="small"

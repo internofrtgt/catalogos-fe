@@ -21,12 +21,12 @@ export interface Canton {
 
 export interface District {
   id: string;
-  provinciaNombre: string;
-  provinceCode: number;
-  cantonNombre: string;
-  cantonCode: number;
-  nombre: string;
-  codigo: number;
+  provincia: string;
+  codigoProvincia: number;
+  canton: string;
+  codigoCanton: string;
+  distrito: string;
+  codigoDistrito: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -144,12 +144,12 @@ export const listDistricts = async (
 };
 
 export const createDistrict = async (payload: {
-  provinciaNombre: string;
-  provinceCode: number;
-  cantonNombre: string;
-  cantonCode: number;
-  nombre: string;
-  codigo: number;
+  provincia: string;
+  codigoProvincia: number;
+  canton: string;
+  codigoCanton: string;
+  distrito: string;
+  codigoDistrito: string;
 }) => {
   const { data } = await http.post('/geography/districts', payload);
   return data;
@@ -158,12 +158,12 @@ export const createDistrict = async (payload: {
 export const updateDistrict = async (
   id: string,
   payload: Partial<{
-    provinciaNombre: string;
-    provinceCode: number;
-    cantonNombre: string;
-    cantonCode: number;
-    nombre: string;
-    codigo: number;
+    provincia: string;
+    codigoProvincia: number;
+    canton: string;
+    codigoCanton: string;
+    distrito: string;
+    codigoDistrito: string;
   }>,
 ) => {
   const { data } = await http.put(`/geography/districts/${id}`, payload);
