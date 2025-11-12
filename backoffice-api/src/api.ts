@@ -496,6 +496,7 @@ function toCamelCase(str: string): string {
     'codigo_canton': 'codigoCanton',
     'codigo_distrito': 'codigoDistrito',
     'codigo_barrio': 'codigoBarrio',
+    'barrio': 'barrio',
     // Add more as needed
   };
 
@@ -2049,10 +2050,13 @@ app.post('/api/schemas/update-all', authenticateToken, requireAdmin, async (req,
         key: 'barrios',
         tableName: 'barrios',
         fields: [
-          { name: 'province_code', type: 'int', required: true },
-          { name: 'canton_code', type: 'string', required: true, length: 1024 },
-          { name: 'district_code', type: 'string', required: true, length: 1024 },
-          { name: 'nombre', type: 'string', required: true, length: 1024 }
+          { name: 'provincia', type: 'string', required: true, length: 120 },
+          { name: 'codigo_provincia', type: 'int', required: true },
+          { name: 'canton', type: 'string', required: true, length: 120 },
+          { name: 'codigo_canton', type: 'string', required: true, length: 50 },
+          { name: 'distrito', type: 'string', required: true, length: 120 },
+          { name: 'codigo_distrito', type: 'string', required: true, length: 50 },
+          { name: 'barrio', type: 'string', required: true, length: 120 }
         ]
       }
     ];
@@ -2487,57 +2491,54 @@ app.get('/api/geography/barrios', authenticateToken, async (req, res) => {
     const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
 
     let query = 'SELECT * FROM barrios';
-    const params: any[] = [];
-
-    if (provinceCode) {
-      query += ' WHERE province_code = $1';
-      params.push(provinceCode);
-    }
-
-    if (cantonCode) {
-      const condition = provinceCode ? ' AND canton_code = $2' : ' WHERE canton_code = $1';
-      query += condition;
-      params.push(cantonCode);
-    }
-
-    if (districtName) {
-      const paramIndex = params.length + 1;
-      const condition = (provinceCode || cantonCode) ? ` AND LOWER(district_name) = $${paramIndex}` : ' WHERE LOWER(district_name) = $1';
-      query += condition;
-      params.push(String(districtName).toLowerCase());
-    }
-
-    if (search) {
-      const paramIndex = params.length + 1;
-      const searchCondition = (provinceCode || cantonCode || districtName)
-        ? ` AND (CAST(nombre AS TEXT) ILIKE $${paramIndex} OR CAST(district_name AS TEXT) ILIKE $${paramIndex} OR CAST(canton_nombre AS TEXT) ILIKE $${paramIndex} OR CAST(provincia_nombre AS TEXT) ILIKE $${paramIndex})`
-        : ` WHERE (CAST(nombre AS TEXT) ILIKE $1 OR CAST(district_name AS TEXT) ILIKE $1 OR CAST(canton_nombre AS TEXT) ILIKE $1 OR CAST(provincia_nombre AS TEXT) ILIKE $1)`;
-      query += searchCondition;
-      params.push(`%${search}%`);
-    }
-
-    // Build count query
     let countQuery = 'SELECT COUNT(*) FROM barrios';
-    const countParams = [...params];
+    const params: any[] = [];
+    const countParams: any[] = [];
+
+    // Build WHERE conditions
+    const whereConditions: string[] = [];
 
     if (provinceCode) {
-      countQuery += ' WHERE province_code = $1';
-    }
-    if (cantonCode) {
-      countQuery += provinceCode ? ' AND canton_code = $2' : ' WHERE canton_code = $1';
-    }
-    if (districtName) {
-      const paramIndex = (provinceCode ? 1 : 0) + (cantonCode ? 1 : 0) + 1;
-      countQuery += (provinceCode || cantonCode) ? ` AND LOWER(district_name) = $${paramIndex}` : ' WHERE LOWER(district_name) = $1';
-    }
-    if (search) {
-      const paramIndex = countParams.length;
-      countQuery += (provinceCode || cantonCode || districtName)
-        ? ` AND (CAST(nombre AS TEXT) ILIKE $${paramIndex} OR CAST(district_name AS TEXT) ILIKE $${paramIndex} OR CAST(canton_nombre AS TEXT) ILIKE $${paramIndex} OR CAST(provincia_nombre AS TEXT) ILIKE $${paramIndex})`
-        : ` WHERE (CAST(nombre AS TEXT) ILIKE $1 OR CAST(district_name AS TEXT) ILIKE $1 OR CAST(canton_nombre AS TEXT) ILIKE $1 OR CAST(provincia_nombre AS TEXT) ILIKE $1)`;
+      whereConditions.push('codigo_provincia = $' + (params.length + 1));
+      params.push(provinceCode);
+      countParams.push(provinceCode);
     }
 
-    query += ' ORDER BY province_code ASC, canton_code ASC, district_name ASC, nombre ASC';
+    if (cantonCode) {
+      whereConditions.push('codigo_canton = $' + (params.length + 1));
+      params.push(cantonCode);
+      countParams.push(cantonCode);
+    }
+
+    if (districtName) {
+      whereConditions.push('LOWER(distrito) = $' + (params.length + 1));
+      params.push(String(districtName).toLowerCase());
+      countParams.push(String(districtName).toLowerCase());
+    }
+
+    if (search) {
+      const searchConditions = [
+        'CAST(barrio AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(distrito AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(codigo_distrito AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(canton AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(codigo_canton AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(provincia AS TEXT) ILIKE $' + (params.length + 1),
+        'CAST(codigo_provincia AS TEXT) ILIKE $' + (params.length + 1)
+      ];
+      whereConditions.push('(' + searchConditions.join(' OR ') + ')');
+      params.push(`%${search}%`);
+      countParams.push(`%${search}%`);
+    }
+
+    // Add WHERE clause if there are conditions
+    if (whereConditions.length > 0) {
+      const whereClause = ' WHERE ' + whereConditions.join(' AND ');
+      query += whereClause;
+      countQuery += whereClause;
+    }
+
+    query += ' ORDER BY codigo_provincia ASC, codigo_canton ASC, codigo_distrito ASC, barrio ASC';
     const offset = (pageNumber - 1) * limitNumber;
     query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
 
@@ -2546,8 +2547,11 @@ app.get('/api/geography/barrios', authenticateToken, async (req, res) => {
       pool.query(countQuery, countParams)
     ]);
 
+    // Transform database row keys from snake_case to camelCase for frontend compatibility
+    const transformedData = itemsResult.rows.map(row => transformRowKeys(row));
+
     res.json({
-      data: itemsResult.rows,
+      data: transformedData,
       meta: {
         total: Number(countResult.rows[0].count),
         page: pageNumber,
@@ -2661,19 +2665,19 @@ app.get('/api/geography/districts/:districtId/barrios', authenticateToken, async
     const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
 
     let query = `SELECT b.* FROM barrios b
-                 JOIN distritos d ON b.province_code = d.codigo_provincia AND b.canton_code = CAST(d.codigo_canton AS INTEGER) AND b.district_name = d.distrito
+                 JOIN distritos d ON b.codigo_provincia = d.codigo_provincia AND b.codigo_canton = d.codigo_canton AND b.codigo_distrito = d.codigo_distrito
                  WHERE d.id = $1`;
     const countQuery = `SELECT COUNT(*) FROM barrios b
-                        JOIN distritos d ON b.province_code = d.codigo_provincia AND b.canton_code = CAST(d.codigo_canton AS INTEGER) AND b.district_name = d.distrito
+                        JOIN distritos d ON b.codigo_provincia = d.codigo_provincia AND b.codigo_canton = d.codigo_canton AND b.codigo_distrito = d.codigo_distrito
                         WHERE d.id = $1`;
     const params: any[] = [districtId];
 
     if (search) {
-      query += ' AND (CAST(b.nombre AS TEXT) ILIKE $2 OR CAST(b.district_name AS TEXT) ILIKE $2 OR CAST(b.canton_nombre AS TEXT) ILIKE $2 OR CAST(b.provincia_nombre AS TEXT) ILIKE $2)';
+      query += ' AND (CAST(b.barrio AS TEXT) ILIKE $2 OR CAST(b.distrito AS TEXT) ILIKE $2 OR CAST(b.canton AS TEXT) ILIKE $2 OR CAST(b.provincia AS TEXT) ILIKE $2)';
       params.push(`%${search}%`);
     }
 
-    query += ' ORDER BY b.nombre ASC';
+    query += ' ORDER BY b.barrio ASC';
     const offset = (pageNumber - 1) * limitNumber;
     query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
 
@@ -2682,8 +2686,11 @@ app.get('/api/geography/districts/:districtId/barrios', authenticateToken, async
       pool.query(countQuery, params)
     ]);
 
+    // Transform database row keys from snake_case to camelCase for frontend compatibility
+    const transformedData = itemsResult.rows.map(row => transformRowKeys(row));
+
     res.json({
-      data: itemsResult.rows,
+      data: transformedData,
       meta: {
         total: Number(countResult.rows[0].count),
         page: pageNumber,
@@ -3767,33 +3774,48 @@ app.post('/api/geography/:table/import', authenticateToken, requireAdmin, upload
         };
       };
     } else if (table === 'barrios') {
-      requiredColumns = ['province_code', 'canton_code', 'district_code', 'barrio_name'];
+      requiredColumns = ['provincia', 'codigo_provincia', 'canton', 'codigo_canton', 'distrito', 'codigo_distrito', 'barrio'];
       validationFunction = (row: any, i: number) => {
-        const province_code = row.province_code || row.codigo_provincia || row.codigoProvincia || row.provinceCode || row.codigo;
-        const canton_code = row.canton_code || row.codigo_canton || row.codigoCanton || row.cantonCode;
-        const district_code = row.district_code || row.codigo_distrito || row.codigoDistrito || row.districtCode;
-        const barrio_name = row.barrio_name || row.nombre || row.nombre_barrio || row.barrioName;
+        const provincia = row.provincia || row.province || row.provincia_nombre || row.provinciaNombre || row.province_name || row.nombre_provincia;
+        const codigo_provincia = row.codigo_provincia || row.codigoProvincia || row.provinceCode || row.province_code || row.codigo;
+        const canton = row.canton || row.canton_nombre || row.cantonNombre || row.canton_name || row.nombre_canton;
+        const codigo_canton = row.codigo_canton || row.codigoCanton || row.cantonCode || row.canton_code;
+        const distrito = row.distrito || row.district || row.nombre || row.nombre_distrito || row.districtName || row.district_name;
+        const codigo_distrito = row.codigo_distrito || row.codigoDistrito || row.districtCode || row.district_code;
+        const barrio = row.barrio || row.barrio_name || row.nombre || row.nombre_barrio || row.barrioName;
 
-        if (!province_code || province_code.toString().trim() === '') {
-          return { isValid: false, error: `Row ${i + 2}: province_code is required`, data: null };
+        if (!provincia || provincia.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: provincia is required`, data: null };
         }
-        if (!canton_code || canton_code.toString().trim() === '') {
-          return { isValid: false, error: `Row ${i + 2}: canton_code is required`, data: null };
+        if (!codigo_provincia || codigo_provincia.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: codigo_provincia is required`, data: null };
         }
-        if (!district_code || district_code.toString().trim() === '') {
-          return { isValid: false, error: `Row ${i + 2}: district_code is required`, data: null };
+        if (!canton || canton.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: canton is required`, data: null };
         }
-        if (!barrio_name || barrio_name.toString().trim() === '') {
-          return { isValid: false, error: `Row ${i + 2}: barrio_name is required`, data: null };
+        if (!codigo_canton || codigo_canton.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: codigo_canton is required`, data: null };
+        }
+        if (!distrito || distrito.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: distrito is required`, data: null };
+        }
+        if (!codigo_distrito || codigo_distrito.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: codigo_distrito is required`, data: null };
+        }
+        if (!barrio || barrio.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: barrio is required`, data: null };
         }
 
         return {
           isValid: true,
           data: {
-            province_code: parseInt(province_code.toString().trim()),
-            canton_code: canton_code.toString().trim(),
-            district_code: district_code.toString().trim(),
-            barrio_name: barrio_name.toString().trim()
+            provincia: provincia.toString().trim(),
+            codigo_provincia: parseInt(codigo_provincia.toString().trim()),
+            canton: canton.toString().trim(),
+            codigo_canton: codigo_canton.toString().trim(),
+            distrito: distrito.toString().trim(),
+            codigo_distrito: codigo_distrito.toString().trim(),
+            barrio: barrio.toString().trim()
           }
         };
       };
@@ -3832,8 +3854,8 @@ app.post('/api/geography/:table/import', authenticateToken, requireAdmin, upload
           checkQuery = `SELECT id FROM ${tableName} WHERE codigo_provincia = $1 AND codigo_canton = $2 AND codigo_distrito = $3`;
           checkParams = [data.codigo_provincia, data.codigo_canton, data.codigo_distrito];
         } else {
-          checkQuery = `SELECT id FROM ${tableName} WHERE province_code = $1 AND canton_code = $2 AND district_code = $3 AND barrio_name = $4`;
-          checkParams = [data.province_code, data.canton_code, data.district_code, data.barrio_name];
+          checkQuery = `SELECT id FROM ${tableName} WHERE codigo_provincia = $1 AND codigo_canton = $2 AND codigo_distrito = $3 AND barrio = $4`;
+          checkParams = [data.codigo_provincia, data.codigo_canton, data.codigo_distrito, data.barrio];
         }
 
         const existingItem = await pool.query(checkQuery, checkParams);
@@ -4208,6 +4230,138 @@ app.post('/api/schemas/transform-distritos', authenticateToken, requireAdmin, as
 
   } catch (error) {
     console.error('Distritos transformation error:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
+// Special endpoint to transform barrios table structure
+app.post('/api/schemas/transform-barrios', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    console.log('Starting barrios table transformation...');
+
+    const operations = [
+      // 1. Add new columns if they don't exist
+      {
+        description: 'Add new columns if they don\'t exist',
+        sql: `
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'barrios' AND column_name = 'provincia') THEN
+              ALTER TABLE barrios ADD COLUMN provincia VARCHAR(120);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'barrios' AND column_name = 'codigo_provincia') THEN
+              ALTER TABLE barrios ADD COLUMN codigo_provincia INTEGER;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'barrios' AND column_name = 'canton') THEN
+              ALTER TABLE barrios ADD COLUMN canton VARCHAR(120);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'barrios' AND column_name = 'codigo_canton') THEN
+              ALTER TABLE barrios ADD COLUMN codigo_canton VARCHAR(50);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'barrios' AND column_name = 'distrito') THEN
+              ALTER TABLE barrios ADD COLUMN distrito VARCHAR(120);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'barrios' AND column_name = 'codigo_distrito') THEN
+              ALTER TABLE barrios ADD COLUMN codigo_distrito VARCHAR(50);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'barrios' AND column_name = 'barrio') THEN
+              ALTER TABLE barrios ADD COLUMN barrio VARCHAR(120);
+            END IF;
+          END $$;
+        `
+      },
+
+      // 2. Copy data from old columns to new columns
+      {
+        description: 'Copy data from old columns to new columns',
+        sql: `
+          UPDATE barrios SET
+            provincia = COALESCE(provincia_nombre, 'Unknown'),
+            codigo_provincia = COALESCE(province_code, 0),
+            canton = COALESCE(canton_nombre, 'Unknown'),
+            codigo_canton = COALESCE(canton_code, '00'),
+            distrito = COALESCE(district_name, 'Unknown'),
+            codigo_distrito = COALESCE(district_code, '00'),
+            barrio = COALESCE(nombre, 'Unknown');
+        `
+      },
+
+      // 3. Make new columns NOT NULL after data is copied
+      {
+        description: 'Set new columns as NOT NULL',
+        sql: `
+          ALTER TABLE barrios
+            ALTER COLUMN provincia SET NOT NULL,
+            ALTER COLUMN codigo_provincia SET NOT NULL,
+            ALTER COLUMN canton SET NOT NULL,
+            ALTER COLUMN codigo_canton SET NOT NULL,
+            ALTER COLUMN distrito SET NOT NULL,
+            ALTER COLUMN codigo_distrito SET NOT NULL,
+            ALTER COLUMN barrio SET NOT NULL;
+        `
+      },
+
+      // 4. Create unique constraint on new columns
+      {
+        description: 'Add unique constraint on codigo_provincia, codigo_canton, codigo_distrito, barrio',
+        sql: `
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                          WHERE table_name = 'barrios' AND constraint_name = 'barrios_codigo_provincia_codigo_canton_codigo_distrito_barrio_key') THEN
+              ALTER TABLE barrios ADD CONSTRAINT barrios_codigo_provincia_codigo_canton_codigo_distrito_barrio_key
+                UNIQUE (codigo_provincia, codigo_canton, codigo_distrito, barrio);
+            END IF;
+          END $$;
+        `
+      }
+    ];
+
+    const results: any[] = [];
+
+    for (const operation of operations) {
+      try {
+        console.log(`Executing: ${operation.description}`);
+        await pool.query(operation.sql);
+
+        results.push({
+          description: operation.description,
+          status: 'success'
+        });
+
+        console.log(`✅ Success: ${operation.description}`);
+
+      } catch (error) {
+        console.error(`❌ Error in ${operation.description}:`, error);
+        results.push({
+          description: operation.description,
+          status: 'error',
+          error: error.message
+        });
+      }
+    }
+
+    console.log('Transformation completed. Old columns kept as backup.');
+
+    res.json({
+      message: 'Barrios table transformation completed',
+      operations: results,
+      summary: {
+        total: operations.length,
+        success: results.filter(r => r.status === 'success').length,
+        errors: results.filter(r => r.status === 'error').length
+      },
+      note: 'Old columns (provincia_nombre, province_code, canton_nombre, canton_code, district_name, district_code, nombre) have been kept as backup. You can manually drop them if needed.'
+    });
+
+  } catch (error) {
+    console.error('Barrios transformation error:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
