@@ -27,14 +27,14 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { GeoImportDialog } from '../../components/geography/GeoImportDialog';
 
 const cantonFields: CatalogFieldConfig[] = [
-  { name: 'provinciaNombre', label: 'Provincia', type: 'string', required: true },
-  { name: 'provinceCode', label: 'Codigo Provincia', type: 'int', required: true },
-  { name: 'nombre', label: 'Canton', type: 'string', required: true },
-  { name: 'codigo', label: 'Codigo Canton', type: 'int', required: true },
+  { name: 'provincia', label: 'Provincia', type: 'string', required: true },
+  { name: 'codigoProvincia', label: 'Codigo Provincia', type: 'int', required: true },
+  { name: 'canton', label: 'Canton', type: 'string', required: true },
+  { name: 'codigoCanton', label: 'Codigo Canton', type: 'string', required: true },
 ];
 
 export const CantonsPage = () => {
-  const [params, setParams] = useState<CatalogListParams & { provinceCode?: number }>({
+  const [params, setParams] = useState<CatalogListParams & { codigoProvincia?: number }>({
     page: 1,
     limit: 10,
   });
@@ -52,7 +52,7 @@ export const CantonsPage = () => {
         page: params.page,
         limit: params.limit,
         search: params.search,
-        provinceCode: params.provinceCode,
+        provinceCode: params.codigoProvincia,
       }),
   });
 
@@ -125,13 +125,13 @@ export const CantonsPage = () => {
         />
         <TextField
           placeholder="Codigo provincia"
-          value={params.provinceCode?.toString() ?? ''}
+          value={params.codigoProvincia?.toString() ?? ''}
           onChange={(event) => {
             const value = event.target.value;
             setParams((prev) => ({
               ...prev,
               page: 1,
-              provinceCode: value ? Number(value) : undefined,
+              codigoProvincia: value ? Number(value) : undefined,
             }));
           }}
           size="small"

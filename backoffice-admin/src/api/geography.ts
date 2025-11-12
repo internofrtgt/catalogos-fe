@@ -11,10 +11,10 @@ export interface Province {
 
 export interface Canton {
   id: string;
-  provinciaNombre: string;
-  provinceCode: number;
-  nombre: string;
-  codigo: number;
+  provincia: string;
+  codigoProvincia: number;
+  canton: string;
+  codigoCanton: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -95,10 +95,10 @@ export const listCantons = async (
 };
 
 export const createCanton = async (payload: {
-  provinciaNombre: string;
-  provinceCode: number;
-  nombre: string;
-  codigo: number;
+  provincia: string;
+  codigoProvincia: number;
+  canton: string;
+  codigoCanton: string;
 }) => {
   const { data } = await http.post('/geography/cantons', payload);
   return data;
@@ -107,10 +107,10 @@ export const createCanton = async (payload: {
 export const updateCanton = async (
   id: string,
   payload: Partial<{
-    provinciaNombre: string;
-    provinceCode: number;
-    nombre: string;
-    codigo: number;
+    provincia: string;
+    codigoProvincia: number;
+    canton: string;
+    codigoCanton: string;
   }>,
 ) => {
   const { data } = await http.put(`/geography/cantons/${id}`, payload);
