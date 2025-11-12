@@ -504,13 +504,6 @@ async function initializeCatalogTables() {
   }
 }
 
-// Initialize catalog tables
-async function initializeCatalogTables() {
-  for (const definition of catalogDefinitions) {
-    await createCatalogTable(definition);
-  }
-}
-
 // Initialize geography tables
 async function initializeGeographyTables() {
   try {
