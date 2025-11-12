@@ -494,6 +494,8 @@ function toCamelCase(str: string): string {
     'codigopais': 'codigoPais',
     'codigo_provincia': 'codigoProvincia',
     'codigo_canton': 'codigoCanton',
+    'codigo_distrito': 'codigoDistrito',
+    'codigo_barrio': 'codigoBarrio',
     // Add more as needed
   };
 
@@ -2361,7 +2363,30 @@ app.get('/api/geography/cantons', authenticateToken, async (req, res) => {
     ]);
 
     // Transform database row keys from snake_case to camelCase for frontend compatibility
-    const transformedData = itemsResult.rows.map(row => transformRowKeys(row));
+    const transformedData = itemsResult.rows.map(row => {
+      // Manual transformation for cantones to ensure correct field names
+      const transformed: any = {
+        id: row.id,
+        provincia: row.provincia,
+        codigoProvincia: row.codigo_provincia,
+        canton: row.canton,
+        codigoCanton: row.codigo_canton,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      };
+
+      // Keep any additional fields that might exist
+      Object.keys(row).forEach(key => {
+        if (!transformed.hasOwnProperty(key) && key !== 'created_at' && key !== 'updated_at') {
+          transformed[toCamelCase(key)] = row[key];
+        }
+      });
+
+      console.log('Transformed canton row:', transformed); // Debug log
+      return transformed;
+    });
+
+    console.log('Transformed cantons data sample:', transformedData.slice(0, 2)); // Debug log
 
     res.json({
       data: transformedData,
