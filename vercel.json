@@ -24,19 +24,16 @@
       "destination": "/backoffice-api/src/api.ts"
     },
     {
-      "source": "/(.*)",
-      "has": [
-        {
-          "type": "header",
-          "key": "accept",
-          "value": "text/html"
-        }
-      ],
-      "destination": "/backoffice-admin/index.html"
+      "source": "/assets/(.*)",
+      "destination": "/backoffice-admin/assets/$1"
+    },
+    {
+      "source": "/frt-favicon.png",
+      "destination": "/backoffice-admin/frt-favicon.png"
     },
     {
       "source": "/(.*)",
-      "destination": "/backoffice-admin/$1"
+      "destination": "/backoffice-admin/index.html"
     }
   ]
 }
