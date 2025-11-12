@@ -2611,19 +2611,19 @@ app.get('/api/geography/provinces/:provinceCode/cantons/:cantonCode/districts', 
     const pageNumber = Number(page);
     const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
 
-    let query = 'SELECT * FROM distritos WHERE province_code = $1 AND canton_code = $2';
+    let query = 'SELECT * FROM distritos WHERE codigo_provincia = $1 AND codigo_canton = $2';
     const params: any[] = [provinceCode, cantonCode];
 
     if (search) {
-      query += ' AND (CAST(nombre AS TEXT) ILIKE $3 OR CAST(codigo AS TEXT) ILIKE $3 OR CAST(provincia_nombre AS TEXT) ILIKE $3 OR CAST(canton_nombre AS TEXT) ILIKE $3)';
+      query += ' AND (CAST(distrito AS TEXT) ILIKE $3 OR CAST(codigo_distrito AS TEXT) ILIKE $3 OR CAST(provincia AS TEXT) ILIKE $3 OR CAST(canton AS TEXT) ILIKE $3)';
       params.push(`%${search}%`);
     }
 
     const countQuery = search
-      ? `SELECT COUNT(*) FROM distritos WHERE province_code = $1 AND canton_code = $2 AND (CAST(nombre AS TEXT) ILIKE $3 OR CAST(codigo AS TEXT) ILIKE $3 OR CAST(provincia_nombre AS TEXT) ILIKE $3 OR CAST(canton_nombre AS TEXT) ILIKE $3)`
-      : 'SELECT COUNT(*) FROM distritos WHERE province_code = $1 AND canton_code = $2';
+      ? `SELECT COUNT(*) FROM distritos WHERE codigo_provincia = $1 AND codigo_canton = $2 AND (CAST(distrito AS TEXT) ILIKE $3 OR CAST(codigo_distrito AS TEXT) ILIKE $3 OR CAST(provincia AS TEXT) ILIKE $3 OR CAST(canton AS TEXT) ILIKE $3)`
+      : 'SELECT COUNT(*) FROM distritos WHERE codigo_provincia = $1 AND codigo_canton = $2';
 
-    query += ' ORDER BY codigo ASC';
+    query += ' ORDER BY codigo_distrito ASC';
     const offset = (pageNumber - 1) * limitNumber;
     query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
 
@@ -2655,10 +2655,10 @@ app.get('/api/geography/districts/:districtId/barrios', authenticateToken, async
     const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
 
     let query = `SELECT b.* FROM barrios b
-                 JOIN distritos d ON b.province_code = d.province_code AND b.canton_code = d.canton_code AND b.district_name = d.nombre
+                 JOIN distritos d ON b.province_code = d.codigo_provincia AND b.canton_code = CAST(d.codigo_canton AS INTEGER) AND b.district_name = d.distrito
                  WHERE d.id = $1`;
     const countQuery = `SELECT COUNT(*) FROM barrios b
-                        JOIN distritos d ON b.province_code = d.province_code AND b.canton_code = d.canton_code AND b.district_name = d.nombre
+                        JOIN distritos d ON b.province_code = d.codigo_provincia AND b.canton_code = CAST(d.codigo_canton AS INTEGER) AND b.district_name = d.distrito
                         WHERE d.id = $1`;
     const params: any[] = [districtId];
 
