@@ -230,7 +230,7 @@ const catalogDefinitions: any[] = [
     label: 'Tipos de Documentos',
     tableName: 'tipos_documento',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -274,7 +274,7 @@ const catalogDefinitions: any[] = [
     label: 'Tipos de Identificación',
     tableName: 'tipos_identificacion',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -285,7 +285,7 @@ const catalogDefinitions: any[] = [
     label: 'Formas Farmacéuticas',
     tableName: 'formas_farmaceuticas',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'int', required: true },
     ],
     uniqueBy: ['codigo'],
@@ -296,7 +296,7 @@ const catalogDefinitions: any[] = [
     label: 'Tipos de Código para Producto o Servicio',
     tableName: 'tipos_codigo_ps',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -311,19 +311,19 @@ const catalogDefinitions: any[] = [
         name: 'unidad',
         type: 'string',
         required: true,
-        length: 120,
+        length: 1024,
       },
       {
         name: 'simbolo',
         type: 'string',
         required: true,
-        length: 30,
+        length: 1024,
       },
       {
         name: 'tipoUnidad',
         type: 'string',
         required: true,
-        length: 120,
+        length: 1024,
       },
     ],
     uniqueBy: ['unidad'],
@@ -334,7 +334,7 @@ const catalogDefinitions: any[] = [
     label: 'Tipos de Transacción',
     tableName: 'tipos_transaccion',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -345,7 +345,7 @@ const catalogDefinitions: any[] = [
     label: 'Tipos de Descuento',
     tableName: 'tipos_descuento',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -356,7 +356,7 @@ const catalogDefinitions: any[] = [
     label: 'Tipos de Impuestos',
     tableName: 'tipos_impuestos',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -367,7 +367,7 @@ const catalogDefinitions: any[] = [
     label: 'Tarifas de IVA',
     tableName: 'tarifas_iva',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -378,7 +378,7 @@ const catalogDefinitions: any[] = [
     label: 'Tipos de Documento de Exoneración',
     tableName: 'tipos_documento_exoneracion',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -389,7 +389,7 @@ const catalogDefinitions: any[] = [
     label: 'Instituciones o Dep. Emisoras de Exoneración',
     tableName: 'instituciones_exoneracion',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -400,7 +400,7 @@ const catalogDefinitions: any[] = [
     label: 'Tipos de Otros Cargos',
     tableName: 'tipos_otros_cargos',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -411,8 +411,8 @@ const catalogDefinitions: any[] = [
     label: 'Códigos de Moneda',
     tableName: 'codigos_moneda',
     fields: [
-      { name: 'pais', type: 'string', required: true, length: 120 },
-      { name: 'moneda', type: 'string', required: true, length: 120 },
+      { name: 'pais', type: 'string', required: true, length: 1024 },
+      { name: 'moneda', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 3 },
     ],
     uniqueBy: ['codigo'],
@@ -423,7 +423,7 @@ const catalogDefinitions: any[] = [
     label: 'Medios de Pago',
     tableName: 'medios_pago',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -434,7 +434,7 @@ const catalogDefinitions: any[] = [
     label: 'Tipos de Documento de Referencia',
     tableName: 'tipos_documento_referencia',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -445,7 +445,7 @@ const catalogDefinitions: any[] = [
     label: 'Códigos de Referencia',
     tableName: 'codigos_referencia',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -456,7 +456,7 @@ const catalogDefinitions: any[] = [
     label: 'Mensajes de Recepción',
     tableName: 'mensajes_recepcion',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'int', required: true },
     ],
     uniqueBy: ['codigo'],
@@ -467,7 +467,7 @@ const catalogDefinitions: any[] = [
     label: 'Condiciones de Impuesto',
     tableName: 'condiciones_impuesto',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
       { name: 'codigo', type: 'string', required: true, length: 50 },
     ],
     uniqueBy: ['codigo'],
@@ -728,7 +728,7 @@ async function seedApiDocumentation() {
                       label: 'Tipos de Documentos',
                       tableName: 'tipos_documento',
                       fields: [
-                        { name: 'descripcion', type: 'string', required: true },
+                        { name: 'descripcion', type: 'string', required: true, length: 1024 },
                         { name: 'codigo', type: 'int', required: true }
                       ],
                       uniqueBy: ['codigo'],
@@ -1839,7 +1839,7 @@ app.post('/api/schemas/update-all', authenticateToken, requireAdmin, async (req,
         tableName: 'distritos',
         fields: [
           { name: 'province_code', type: 'int', required: true },
-          { name: 'canton_code', type: 'string', required: true, length: 50 },
+          { name: 'canton_code', type: 'string', required: true, length: 1024 },
           { name: 'codigo', type: 'string', required: true, length: 50 }
         ]
       },
@@ -1848,9 +1848,9 @@ app.post('/api/schemas/update-all', authenticateToken, requireAdmin, async (req,
         tableName: 'barrios',
         fields: [
           { name: 'province_code', type: 'int', required: true },
-          { name: 'canton_code', type: 'string', required: true, length: 50 },
-          { name: 'district_code', type: 'string', required: true, length: 50 },
-          { name: 'nombre', type: 'string', required: true }
+          { name: 'canton_code', type: 'string', required: true, length: 1024 },
+          { name: 'district_code', type: 'string', required: true, length: 1024 },
+          { name: 'nombre', type: 'string', required: true, length: 1024 }
         ]
       }
     ];
