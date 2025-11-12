@@ -197,7 +197,7 @@ function requireAdmin(req: any, res: any, next: any) {
   next();
 }
 
-// Catalog definitions (simplified version from the original)
+// Complete catalog definitions from original file
 const catalogDefinitions: any[] = [
   {
     key: 'tipos-documento',
@@ -215,8 +215,8 @@ const catalogDefinitions: any[] = [
     label: 'Situación de Presentación',
     tableName: 'situaciones_presentacion',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'numeric', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
+      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -226,7 +226,7 @@ const catalogDefinitions: any[] = [
     label: 'Actividades Económicas',
     tableName: 'actividades_economicas',
     fields: [
-      { name: 'codigo', type: 'numeric', required: true },
+      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
       { name: 'nombre', type: 'string', required: true },
     ],
     uniqueBy: ['codigo'],
@@ -237,8 +237,8 @@ const catalogDefinitions: any[] = [
     label: 'Condiciones de Venta',
     tableName: 'condiciones_venta',
     fields: [
-      { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'numeric', required: true },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
+      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -249,7 +249,7 @@ const catalogDefinitions: any[] = [
     tableName: 'tipos_identificacion',
     fields: [
       { name: 'descripcion', type: 'string', required: true },
-      { name: 'codigo', type: 'numeric', required: true },
+      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
     ],
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
@@ -266,16 +266,186 @@ const catalogDefinitions: any[] = [
     searchFields: ['descripcion', 'codigo'],
   },
   {
+    key: 'tipos-codigo-ps',
+    label: 'Tipos de Código para P o S',
+    tableName: 'tipos_codigo_ps',
+    fields: [
+      { name: 'descripcion', type: 'string', required: true },
+      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['descripcion', 'codigo'],
+  },
+  {
     key: 'unidades-medida',
     label: 'Unidades de Medida',
     tableName: 'unidades_medida',
     fields: [
-      { name: 'unidad', type: 'string', required: true },
-      { name: 'simbolo', type: 'string', required: true },
-      { name: 'tipoUnidad', type: 'string', required: true },
+      {
+        name: 'unidad',
+        type: 'string',
+        required: true,
+        length: 120,
+      },
+      {
+        name: 'simbolo',
+        type: 'string',
+        required: true,
+        length: 30,
+      },
+      {
+        name: 'tipoUnidad',
+        type: 'string',
+        required: true,
+        length: 120,
+      },
     ],
     uniqueBy: ['unidad'],
     searchFields: ['unidad', 'simbolo', 'tipoUnidad'],
+  },
+  {
+    key: 'tipos-transaccion',
+    label: 'Tipos de Transacción',
+    tableName: 'tipos_transaccion',
+    fields: [
+      { name: 'descripcion', type: 'string', required: true },
+      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['descripcion', 'codigo'],
+  },
+  {
+    key: 'tipos-descuento',
+    label: 'Tipos de Descuento',
+    tableName: 'tipos_descuento',
+    fields: [
+      { name: 'descripcion', type: 'string', required: true },
+      { name: 'codigo', type: 'int', required: true },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['descripcion', 'codigo'],
+  },
+  {
+    key: 'tipos-impuestos',
+    label: 'Tipos de Impuestos',
+    tableName: 'tipos_impuestos',
+    fields: [
+      { name: 'descripcion', type: 'string', required: true },
+      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['descripcion', 'codigo'],
+  },
+  {
+    key: 'tarifas-iva',
+    label: 'Tarifas de IVA',
+    tableName: 'tarifas_iva',
+    fields: [
+      { name: 'descripcion', type: 'string', required: true },
+      { name: 'codigo', type: 'int', required: true },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['descripcion', 'codigo'],
+  },
+  {
+    key: 'tipos-documento-exoneracion',
+    label: 'Tipos de Documento de Exoneración',
+    tableName: 'tipos_documento_exoneracion',
+    fields: [
+      { name: 'descripcion', type: 'string', required: true },
+      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['descripcion', 'codigo'],
+  },
+  {
+    key: 'instituciones-exoneracion',
+    label: 'Instituciones o Dep. Emisoras de Exoneración',
+    tableName: 'instituciones_exoneracion',
+    fields: [
+      { name: 'descripcion', type: 'string', required: true },
+      { name: 'codigo', type: 'int', required: true },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['descripcion', 'codigo'],
+  },
+  {
+    key: 'tipos-otros-cargos',
+    label: 'Tipos de Otros Cargos',
+    tableName: 'tipos_otros_cargos',
+    fields: [
+      { name: 'descripcion', type: 'string', required: true },
+      { name: 'codigo', type: 'int', required: true },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['descripcion', 'codigo'],
+  },
+  {
+    key: 'codigos-moneda',
+    label: 'Códigos de Moneda',
+    tableName: 'codigos_moneda',
+    fields: [
+      { name: 'pais', type: 'string', required: true, length: 120 },
+      { name: 'moneda', type: 'string', required: true, length: 120 },
+      { name: 'codigo', type: 'string', required: true, length: 3 },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['pais', 'moneda', 'codigo'],
+  },
+  {
+    key: 'medios-pago',
+    label: 'Medios de Pago',
+    tableName: 'medios_pago',
+    fields: [
+      { name: 'descripcion', type: 'string', required: true },
+      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['descripcion', 'codigo'],
+  },
+  {
+    key: 'tipos-documento-referencia',
+    label: 'Tipos de Documento de Referencia',
+    tableName: 'tipos_documento_referencia',
+    fields: [
+      { name: 'descripcion', type: 'string', required: true },
+      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['descripcion', 'codigo'],
+  },
+  {
+    key: 'codigos-referencia',
+    label: 'Códigos de Referencia',
+    tableName: 'codigos_referencia',
+    fields: [
+      { name: 'descripcion', type: 'string', required: true },
+      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['descripcion', 'codigo'],
+  },
+  {
+    key: 'mensajes-recepcion',
+    label: 'Mensajes de Recepción',
+    tableName: 'mensajes_recepcion',
+    fields: [
+      { name: 'descripcion', type: 'string', required: true },
+      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['descripcion', 'codigo'],
+  },
+  {
+    key: 'condiciones-impuesto',
+    label: 'Condiciones de Impuesto',
+    tableName: 'condiciones_impuesto',
+    fields: [
+      { name: 'descripcion', type: 'string', required: true },
+      { name: 'codigo', type: 'numeric', required: true, precision: 12, scale: 4 },
+    ],
+    uniqueBy: ['codigo'],
+    searchFields: ['descripcion', 'codigo'],
   },
 ];
 
@@ -334,8 +504,90 @@ async function initializeCatalogTables() {
   }
 }
 
-// Initialize tables on startup
-initializeCatalogTables();
+// Initialize catalog tables
+async function initializeCatalogTables() {
+  for (const definition of catalogDefinitions) {
+    await createCatalogTable(definition);
+  }
+}
+
+// Initialize geography tables
+async function initializeGeographyTables() {
+  try {
+    // Create provinces table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS provincias (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        nombre VARCHAR(120) NOT NULL,
+        codigo INTEGER NOT NULL UNIQUE,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    console.log('Table provincias created successfully');
+
+    // Create cantones table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cantones (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        provincia_nombre VARCHAR(120) NOT NULL,
+        province_code INTEGER NOT NULL,
+        nombre VARCHAR(120) NOT NULL,
+        codigo INTEGER NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (province_code, codigo)
+      )
+    `);
+    console.log('Table cantones created successfully');
+
+    // Create distritos table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS distritos (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        provincia_nombre VARCHAR(120) NOT NULL,
+        province_code INTEGER NOT NULL,
+        canton_nombre VARCHAR(120) NOT NULL,
+        canton_code INTEGER NOT NULL,
+        nombre VARCHAR(120) NOT NULL,
+        codigo INTEGER NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (province_code, canton_code, codigo)
+      )
+    `);
+    console.log('Table distritos created successfully');
+
+    // Create barrios table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS barrios (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        province_key VARCHAR(80) NOT NULL,
+        provincia_nombre VARCHAR(120) NOT NULL,
+        province_code INTEGER NOT NULL,
+        canton_nombre VARCHAR(120) NOT NULL,
+        canton_code INTEGER NOT NULL,
+        district_name VARCHAR(120) NOT NULL,
+        district_code INTEGER,
+        nombre VARCHAR(120) NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (province_code, canton_code, district_name, nombre)
+      )
+    `);
+    console.log('Table barrios created successfully');
+  } catch (error) {
+    console.error('Error creating geography tables:', error);
+  }
+}
+
+// Initialize all tables on startup
+async function initializeAllTables() {
+  await initializeCatalogTables();
+  await initializeGeographyTables();
+}
+
+initializeAllTables();
 
 // Catalog endpoints
 app.get('/api/catalogs', authenticateToken, async (req, res) => {
@@ -519,6 +771,116 @@ app.delete('/api/catalogs/:catalogKey/:id', authenticateToken, requireAdmin, asy
     res.json({ success: true });
   } catch (error) {
     console.error('Delete catalog item error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Geography endpoints
+app.get('/api/geography/provinces', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM provincias ORDER BY codigo'
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get provinces error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.get('/api/geography/provinces/:provinceCode/cantons', authenticateToken, async (req, res) => {
+  try {
+    const { provinceCode } = req.params;
+    const result = await pool.query(
+      'SELECT * FROM cantones WHERE province_code = $1 ORDER BY codigo',
+      [provinceCode]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get cantons error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.get('/api/geography/provinces/:provinceCode/cantons/:cantonCode/districts', authenticateToken, async (req, res) => {
+  try {
+    const { provinceCode, cantonCode } = req.params;
+    const result = await pool.query(
+      'SELECT * FROM distritos WHERE province_code = $1 AND canton_code = $2 ORDER BY codigo',
+      [provinceCode, cantonCode]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get districts error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.get('/api/geography/districts/:districtId/barrios', authenticateToken, async (req, res) => {
+  try {
+    const { districtId } = req.params;
+    const result = await pool.query(
+      `SELECT b.* FROM barrios b
+       JOIN distritos d ON b.province_code = d.province_code AND b.canton_code = d.canton_code AND b.district_name = d.nombre
+       WHERE d.id = $1 ORDER BY b.nombre`,
+      [districtId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get barrios error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.get('/api/geography/cantons/:cantonId/barrios', authenticateToken, async (req, res) => {
+  try {
+    const { cantonId } = req.params;
+    const result = await pool.query(
+      `SELECT b.* FROM barrios b
+       JOIN cantones c ON b.province_code = c.province_code AND b.canton_code = c.codigo
+       WHERE c.id = $1 ORDER BY b.nombre`,
+      [cantonId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get barrios by canton error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Create initial Costa Rica geography data
+app.post('/api/geography/seed', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    // Check if data already exists
+    const existingProvinces = await pool.query('SELECT COUNT(*) as count FROM provincias');
+    if (parseInt(existingProvinces.rows[0].count) > 0) {
+      return res.json({ message: 'Geography data already exists' });
+    }
+
+    // Insert provinces
+    const provinces = [
+      { nombre: 'San José', codigo: 1 },
+      { nombre: 'Alajuela', codigo: 2 },
+      { nombre: 'Cartago', codigo: 3 },
+      { nombre: 'Heredia', codigo: 4 },
+      { nombre: 'Guanacaste', codigo: 5 },
+      { nombre: 'Puntarenas', codigo: 6 },
+      { nombre: 'Limón', codigo: 7 }
+    ];
+
+    for (const province of provinces) {
+      await pool.query(
+        'INSERT INTO provincias (nombre, codigo) VALUES ($1, $2)',
+        [province.nombre, province.codigo]
+      );
+    }
+
+    res.json({
+      message: 'Geography data seeded successfully',
+      provincesInserted: provinces.length
+    });
+  } catch (error) {
+    console.error('Seed geography data error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
