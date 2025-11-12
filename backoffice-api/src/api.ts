@@ -1213,6 +1213,256 @@ app.get('/api/geography/cantons/:cantonId/barrios', authenticateToken, async (re
   }
 });
 
+// Users endpoints
+app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { search, page = 1, limit = 20 } = req.query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Math.min(Math.max(Number(limit), 1), 100);
+
+    let query = 'SELECT id, username, role, is_active, created_at, updated_at FROM users';
+    let countQuery = 'SELECT COUNT(*) FROM users';
+    const params: any[] = [];
+    const countParams: any[] = [];
+
+    // Build WHERE conditions
+    const whereConditions: string[] = [];
+
+    if (search) {
+      const searchTerm = String(search).trim().toLowerCase();
+      whereConditions.push('LOWER(username) ILIKE $' + (params.length + 1));
+      params.push(`%${searchTerm}%`);
+      countParams.push(`%${searchTerm}%`);
+    }
+
+    // Add WHERE clause if there are conditions
+    if (whereConditions.length > 0) {
+      const whereClause = ' WHERE ' + whereConditions.join(' AND ');
+      query += whereClause;
+      countQuery += whereClause;
+    }
+
+    query += ' ORDER BY created_at DESC, id DESC';
+    const offset = (pageNumber - 1) * limitNumber;
+    query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
+
+    const [usersResult, countResult] = await Promise.all([
+      pool.query(query, params),
+      pool.query(countQuery, countParams)
+    ]);
+
+    // Format users response (exclude password hash)
+    const users = usersResult.rows.map(user => ({
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      isActive: user.is_active,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at
+    }));
+
+    res.json({
+      data: users,
+      meta: {
+        total: Number(countResult.rows[0].count),
+        page: pageNumber,
+        limit: limitNumber
+      }
+    });
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.get('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      'SELECT id, username, role, is_active, created_at, updated_at FROM users WHERE id = $1',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = {
+      id: result.rows[0].id,
+      username: result.rows[0].username,
+      role: result.rows[0].role,
+      isActive: result.rows[0].is_active,
+      createdAt: result.rows[0].created_at,
+      updatedAt: result.rows[0].updated_at
+    };
+
+    res.json(user);
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.post('/api/users', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { username, password, role = 'OPERATOR', isActive = true } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
+    }
+
+    // Normalize username to lowercase
+    const normalisedUsername = username.toLowerCase().trim();
+
+    // Check if user already exists
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE username = $1',
+      [normalisedUsername]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(409).json({ message: 'El usuario ya existe' });
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    // Create user
+    const result = await pool.query(
+      `INSERT INTO users (username, password_hash, role, is_active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, NOW(), NOW())
+       RETURNING id, username, role, is_active, created_at, updated_at`,
+      [normalisedUsername, passwordHash, role, isActive]
+    );
+
+    const user = {
+      id: result.rows[0].id,
+      username: result.rows[0].username,
+      role: result.rows[0].role,
+      isActive: result.rows[0].is_active,
+      createdAt: result.rows[0].created_at,
+      updatedAt: result.rows[0].updated_at
+    };
+
+    res.status(201).json(user);
+  } catch (error) {
+    console.error('Create user error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.put('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, password, role, isActive } = req.body;
+
+    // Check if user exists
+    const existingUser = await pool.query(
+      'SELECT id, username FROM users WHERE id = $1',
+      [id]
+    );
+
+    if (existingUser.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const updates: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    // Check for username change
+    if (username && username.trim() !== existingUser.rows[0].username) {
+      const normalisedUsername = username.toLowerCase().trim();
+
+      // Check if new username already exists
+      const duplicateUser = await pool.query(
+        'SELECT id FROM users WHERE username = $1 AND id != $2',
+        [normalisedUsername, id]
+      );
+
+      if (duplicateUser.rows.length > 0) {
+        return res.status(409).json({ message: `El usuario "${username}" ya existe` });
+      }
+
+      updates.push(`username = $${paramIndex++}`);
+      params.push(normalisedUsername);
+    }
+
+    if (password) {
+      const passwordHash = await bcrypt.hash(password, 12);
+      updates.push(`password_hash = $${paramIndex++}`);
+      params.push(passwordHash);
+    }
+
+    if (role) {
+      updates.push(`role = $${paramIndex++}`);
+      params.push(role);
+    }
+
+    if (isActive !== undefined) {
+      updates.push(`is_active = $${paramIndex++}`);
+      params.push(isActive);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ message: 'No valid fields to update' });
+    }
+
+    updates.push(`updated_at = NOW()`);
+    params.push(id); // For WHERE clause
+
+    const result = await pool.query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex}
+       RETURNING id, username, role, is_active, created_at, updated_at`,
+      params
+    );
+
+    const user = {
+      id: result.rows[0].id,
+      username: result.rows[0].username,
+      role: result.rows[0].role,
+      isActive: result.rows[0].is_active,
+      createdAt: result.rows[0].created_at,
+      updatedAt: result.rows[0].updated_at
+    };
+
+    res.json(user);
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.delete('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Prevent self-deletion
+    if (req.user.id === id) {
+      return res.status(400).json({ message: 'No puedes eliminar tu propio usuario' });
+    }
+
+    // Check if user exists
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE id = $1',
+      [id]
+    );
+
+    if (existingUser.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Create initial Costa Rica geography data
 app.post('/api/geography/seed', authenticateToken, requireAdmin, async (req, res) => {
   try {
