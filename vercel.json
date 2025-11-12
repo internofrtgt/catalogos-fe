@@ -2,10 +2,10 @@
   "version": 2,
   "builds": [
     {
-      "src": "backoffice-api/package.json",
-      "use": "@vercel/static-build",
+      "src": "backoffice-api/src/api.ts",
+      "use": "@vercel/node",
       "config": {
-        "buildCommand": "cd backoffice-api && npm run build && cp -r node_modules dist/ && cp package.json dist/"
+        "includeFiles": "backoffice-api/**"
       }
     },
     {
@@ -19,7 +19,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/backoffice-api/dist/api.js"
+      "destination": "/backoffice-api/src/api.ts"
     },
     {
       "source": "/(.*)",
