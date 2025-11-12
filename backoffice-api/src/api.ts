@@ -776,10 +776,48 @@ app.delete('/api/catalogs/:catalogKey/:id', authenticateToken, requireAdmin, asy
 // Geography endpoints
 app.get('/api/geography/provinces', authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM provincias ORDER BY codigo'
-    );
-    res.json(result.rows);
+    const { search, page = 1, limit = 50 } = req.query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
+
+    let query = 'SELECT * FROM provincias';
+    const countQuery = 'SELECT COUNT(*) FROM provincias';
+    const params: any[] = [];
+
+    if (search) {
+      query += ' WHERE CAST(nombre AS TEXT) ILIKE $1 OR CAST(codigo AS TEXT) ILIKE $1';
+      const searchCountQuery = 'SELECT COUNT(*) FROM provincias WHERE CAST(nombre AS TEXT) ILIKE $1 OR CAST(codigo AS TEXT) ILIKE $1';
+      params.push(`%${search}%`);
+
+      const [itemsResult, countResult] = await Promise.all([
+        pool.query(`${query} ORDER BY codigo ASC LIMIT ${limitNumber} OFFSET ${(pageNumber - 1) * limitNumber}`, params),
+        pool.query(searchCountQuery, params)
+      ]);
+
+      res.json({
+        data: itemsResult.rows,
+        meta: {
+          total: Number(countResult.rows[0].count),
+          page: pageNumber,
+          limit: limitNumber
+        }
+      });
+    } else {
+      const [itemsResult, countResult] = await Promise.all([
+        pool.query(`${query} ORDER BY codigo ASC LIMIT ${limitNumber} OFFSET ${(pageNumber - 1) * limitNumber}`),
+        pool.query(countQuery)
+      ]);
+
+      res.json({
+        data: itemsResult.rows,
+        meta: {
+          total: Number(countResult.rows[0].count),
+          page: pageNumber,
+          limit: limitNumber
+        }
+      });
+    }
   } catch (error) {
     console.error('Get provinces error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -789,11 +827,40 @@ app.get('/api/geography/provinces', authenticateToken, async (req, res) => {
 app.get('/api/geography/provinces/:provinceCode/cantons', authenticateToken, async (req, res) => {
   try {
     const { provinceCode } = req.params;
-    const result = await pool.query(
-      'SELECT * FROM cantones WHERE province_code = $1 ORDER BY codigo',
-      [provinceCode]
-    );
-    res.json(result.rows);
+    const { search, page = 1, limit = 50 } = req.query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
+
+    let query = 'SELECT * FROM cantones WHERE province_code = $1';
+    const params: any[] = [provinceCode];
+
+    if (search) {
+      query += ' AND (CAST(nombre AS TEXT) ILIKE $2 OR CAST(codigo AS TEXT) ILIKE $2 OR CAST(provincia_nombre AS TEXT) ILIKE $2)';
+      params.push(`%${search}%`);
+    }
+
+    const countQuery = search
+      ? `SELECT COUNT(*) FROM cantones WHERE province_code = $1 AND (CAST(nombre AS TEXT) ILIKE $2 OR CAST(codigo AS TEXT) ILIKE $2 OR CAST(provincia_nombre AS TEXT) ILIKE $2)`
+      : 'SELECT COUNT(*) FROM cantones WHERE province_code = $1';
+
+    query += ' ORDER BY codigo ASC';
+    const offset = (pageNumber - 1) * limitNumber;
+    query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
+
+    const [itemsResult, countResult] = await Promise.all([
+      pool.query(query, params),
+      pool.query(countQuery, params)
+    ]);
+
+    res.json({
+      data: itemsResult.rows,
+      meta: {
+        total: Number(countResult.rows[0].count),
+        page: pageNumber,
+        limit: limitNumber
+      }
+    });
   } catch (error) {
     console.error('Get cantons error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -803,11 +870,40 @@ app.get('/api/geography/provinces/:provinceCode/cantons', authenticateToken, asy
 app.get('/api/geography/provinces/:provinceCode/cantons/:cantonCode/districts', authenticateToken, async (req, res) => {
   try {
     const { provinceCode, cantonCode } = req.params;
-    const result = await pool.query(
-      'SELECT * FROM distritos WHERE province_code = $1 AND canton_code = $2 ORDER BY codigo',
-      [provinceCode, cantonCode]
-    );
-    res.json(result.rows);
+    const { search, page = 1, limit = 50 } = req.query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
+
+    let query = 'SELECT * FROM distritos WHERE province_code = $1 AND canton_code = $2';
+    const params: any[] = [provinceCode, cantonCode];
+
+    if (search) {
+      query += ' AND (CAST(nombre AS TEXT) ILIKE $3 OR CAST(codigo AS TEXT) ILIKE $3 OR CAST(provincia_nombre AS TEXT) ILIKE $3 OR CAST(canton_nombre AS TEXT) ILIKE $3)';
+      params.push(`%${search}%`);
+    }
+
+    const countQuery = search
+      ? `SELECT COUNT(*) FROM distritos WHERE province_code = $1 AND canton_code = $2 AND (CAST(nombre AS TEXT) ILIKE $3 OR CAST(codigo AS TEXT) ILIKE $3 OR CAST(provincia_nombre AS TEXT) ILIKE $3 OR CAST(canton_nombre AS TEXT) ILIKE $3)`
+      : 'SELECT COUNT(*) FROM distritos WHERE province_code = $1 AND canton_code = $2';
+
+    query += ' ORDER BY codigo ASC';
+    const offset = (pageNumber - 1) * limitNumber;
+    query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
+
+    const [itemsResult, countResult] = await Promise.all([
+      pool.query(query, params),
+      pool.query(countQuery, params)
+    ]);
+
+    res.json({
+      data: itemsResult.rows,
+      meta: {
+        total: Number(countResult.rows[0].count),
+        page: pageNumber,
+        limit: limitNumber
+      }
+    });
   } catch (error) {
     console.error('Get districts error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -817,13 +913,41 @@ app.get('/api/geography/provinces/:provinceCode/cantons/:cantonCode/districts', 
 app.get('/api/geography/districts/:districtId/barrios', authenticateToken, async (req, res) => {
   try {
     const { districtId } = req.params;
-    const result = await pool.query(
-      `SELECT b.* FROM barrios b
-       JOIN distritos d ON b.province_code = d.province_code AND b.canton_code = d.canton_code AND b.district_name = d.nombre
-       WHERE d.id = $1 ORDER BY b.nombre`,
-      [districtId]
-    );
-    res.json(result.rows);
+    const { search, page = 1, limit = 50 } = req.query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
+
+    let query = `SELECT b.* FROM barrios b
+                 JOIN distritos d ON b.province_code = d.province_code AND b.canton_code = d.canton_code AND b.district_name = d.nombre
+                 WHERE d.id = $1`;
+    const countQuery = `SELECT COUNT(*) FROM barrios b
+                        JOIN distritos d ON b.province_code = d.province_code AND b.canton_code = d.canton_code AND b.district_name = d.nombre
+                        WHERE d.id = $1`;
+    const params: any[] = [districtId];
+
+    if (search) {
+      query += ' AND (CAST(b.nombre AS TEXT) ILIKE $2 OR CAST(b.district_name AS TEXT) ILIKE $2 OR CAST(b.canton_nombre AS TEXT) ILIKE $2 OR CAST(b.provincia_nombre AS TEXT) ILIKE $2)';
+      params.push(`%${search}%`);
+    }
+
+    query += ' ORDER BY b.nombre ASC';
+    const offset = (pageNumber - 1) * limitNumber;
+    query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
+
+    const [itemsResult, countResult] = await Promise.all([
+      pool.query(query, params),
+      pool.query(countQuery, params)
+    ]);
+
+    res.json({
+      data: itemsResult.rows,
+      meta: {
+        total: Number(countResult.rows[0].count),
+        page: pageNumber,
+        limit: limitNumber
+      }
+    });
   } catch (error) {
     console.error('Get barrios error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -833,13 +957,41 @@ app.get('/api/geography/districts/:districtId/barrios', authenticateToken, async
 app.get('/api/geography/cantons/:cantonId/barrios', authenticateToken, async (req, res) => {
   try {
     const { cantonId } = req.params;
-    const result = await pool.query(
-      `SELECT b.* FROM barrios b
-       JOIN cantones c ON b.province_code = c.province_code AND b.canton_code = c.codigo
-       WHERE c.id = $1 ORDER BY b.nombre`,
-      [cantonId]
-    );
-    res.json(result.rows);
+    const { search, page = 1, limit = 50 } = req.query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Math.min(Math.max(Number(limit), 1), 200);
+
+    let query = `SELECT b.* FROM barrios b
+                 JOIN cantones c ON b.province_code = c.province_code AND b.canton_code = c.codigo
+                 WHERE c.id = $1`;
+    const countQuery = `SELECT COUNT(*) FROM barrios b
+                        JOIN cantones c ON b.province_code = c.province_code AND b.canton_code = c.codigo
+                        WHERE c.id = $1`;
+    const params: any[] = [cantonId];
+
+    if (search) {
+      query += ' AND (CAST(b.nombre AS TEXT) ILIKE $2 OR CAST(b.district_name AS TEXT) ILIKE $2 OR CAST(b.canton_nombre AS TEXT) ILIKE $2 OR CAST(b.provincia_nombre AS TEXT) ILIKE $2)';
+      params.push(`%${search}%`);
+    }
+
+    query += ' ORDER BY b.nombre ASC';
+    const offset = (pageNumber - 1) * limitNumber;
+    query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
+
+    const [itemsResult, countResult] = await Promise.all([
+      pool.query(query, params),
+      pool.query(countQuery, params)
+    ]);
+
+    res.json({
+      data: itemsResult.rows,
+      meta: {
+        total: Number(countResult.rows[0].count),
+        page: pageNumber,
+        limit: limitNumber
+      }
+    });
   } catch (error) {
     console.error('Get barrios by canton error:', error);
     res.status(500).json({ message: 'Internal server error' });
