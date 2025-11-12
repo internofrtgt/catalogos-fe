@@ -3859,5 +3859,120 @@ app.get('/api/diagnostic/table/:tableName', authenticateToken, requireAdmin, asy
   }
 });
 
+// Special endpoint to transform cantones table structure
+app.post('/api/schemas/transform-cantones', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    console.log('Starting cantones table transformation...');
+
+    const operations = [
+      // 1. Add new columns if they don't exist
+      {
+        description: 'Add new columns if they don\'t exist',
+        sql: `
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'cantones' AND column_name = 'provincia') THEN
+              ALTER TABLE cantones ADD COLUMN provincia VARCHAR(120);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'cantones' AND column_name = 'codigo_provincia') THEN
+              ALTER TABLE cantones ADD COLUMN codigo_provincia INTEGER;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'cantones' AND column_name = 'canton') THEN
+              ALTER TABLE cantones ADD COLUMN canton VARCHAR(120);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'cantones' AND column_name = 'codigo_canton') THEN
+              ALTER TABLE cantones ADD COLUMN codigo_canton VARCHAR(50);
+            END IF;
+          END $$;
+        `
+      },
+
+      // 2. Copy data from old columns to new columns
+      {
+        description: 'Copy data from old columns to new columns',
+        sql: `
+          UPDATE cantones SET
+            provincia = COALESCE(provincia_nombre, 'Unknown'),
+            codigo_provincia = COALESCE(province_code, 0),
+            canton = COALESCE(nombre, 'Unknown'),
+            codigo_canton = COALESCE(codigo, '00');
+        `
+      },
+
+      // 3. Make new columns NOT NULL after data is copied
+      {
+        description: 'Set new columns as NOT NULL',
+        sql: `
+          ALTER TABLE cantones
+            ALTER COLUMN provincia SET NOT NULL,
+            ALTER COLUMN codigo_provincia SET NOT NULL,
+            ALTER COLUMN canton SET NOT NULL,
+            ALTER COLUMN codigo_canton SET NOT NULL;
+        `
+      },
+
+      // 4. Create unique constraint on new columns
+      {
+        description: 'Add unique constraint on codigo_provincia and codigo_canton',
+        sql: `
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints
+                          WHERE table_name = 'cantones' AND constraint_name = 'cantones_codigo_provincia_codigo_canton_key') THEN
+              ALTER TABLE cantones ADD CONSTRAINT cantones_codigo_provincia_codigo_canton_key
+                UNIQUE (codigo_provincia, codigo_canton);
+            END IF;
+          END $$;
+        `
+      }
+    ];
+
+    const results: any[] = [];
+
+    for (const operation of operations) {
+      try {
+        console.log(`Executing: ${operation.description}`);
+        await pool.query(operation.sql);
+
+        results.push({
+          description: operation.description,
+          status: 'success'
+        });
+
+        console.log(`✅ Success: ${operation.description}`);
+
+      } catch (error) {
+        console.error(`❌ Error in ${operation.description}:`, error);
+        results.push({
+          description: operation.description,
+          status: 'error',
+          error: error.message
+        });
+      }
+    }
+
+    // 5. Drop old columns (optional - keep them as backup for now)
+    console.log('Transformation completed. Old columns kept as backup.');
+
+    res.json({
+      message: 'Cantones table transformation completed',
+      operations: results,
+      summary: {
+        total: operations.length,
+        success: results.filter(r => r.status === 'success').length,
+        errors: results.filter(r => r.status === 'error').length
+      },
+      note: 'Old columns (provincia_nombre, province_code, nombre, codigo) have been kept as backup. You can manually drop them if needed.'
+    });
+
+  } catch (error) {
+    console.error('Cantones transformation error:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
 // Export for Vercel
 export default app;
