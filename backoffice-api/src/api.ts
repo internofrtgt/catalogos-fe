@@ -3828,5 +3828,36 @@ app.post('/api/geography/:table/import', authenticateToken, requireAdmin, upload
   }
 });
 
+// Diagnostic endpoint to check current table structure
+app.get('/api/diagnostic/table/:tableName', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { tableName } = req.params;
+
+    const tableStructure = await pool.query(`
+      SELECT column_name, data_type, numeric_precision, numeric_scale, character_maximum_length, is_nullable
+      FROM information_schema.columns
+      WHERE table_name = $1 AND table_schema = 'public'
+      ORDER BY ordinal_position
+    `, [tableName]);
+
+    if (tableStructure.rows.length === 0) {
+      return res.status(404).json({
+        message: 'Table not found',
+        tableName: tableName
+      });
+    }
+
+    res.json({
+      tableName: tableName,
+      columns: tableStructure.rows,
+      columnCount: tableStructure.rows.length
+    });
+
+  } catch (error) {
+    console.error('Diagnostic error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Export for Vercel
 export default app;
