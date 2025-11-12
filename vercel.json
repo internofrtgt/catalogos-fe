@@ -24,7 +24,7 @@
       "destination": "/backoffice-api/src/api.ts"
     },
     {
-      "source": "/(.*)",
+      "source": "/(?!api/).*",
       "destination": "/backoffice-admin/index.html"
     }
   ]
