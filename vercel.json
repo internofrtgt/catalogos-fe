@@ -25,7 +25,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/backoffice-admin/$1"
+      "destination": "/backoffice-admin/index.html"
     }
   ]
 }
