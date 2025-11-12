@@ -61,7 +61,12 @@ pool.query('SELECT NOW()')
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'API is working', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'API is working',
+    timestamp: new Date().toISOString(),
+    message: 'External API access is enabled',
+    version: '2.0'
+  });
 });
 
 
