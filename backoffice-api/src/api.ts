@@ -595,31 +595,34 @@ app.get('/api/catalogs', authenticateToken, async (req, res) => {
 app.get('/api/catalogs/:catalogKey', authenticateToken, async (req, res) => {
   try {
     const { catalogKey } = req.params;
-    const { search, page = 1, limit = 10 } = req.query;
+    const { search, page = 1, limit = 50 } = req.query;
 
     const definition = catalogDefinitionsMap.get(catalogKey);
     if (!definition) {
       return res.status(404).json({ message: 'Catalog not found' });
     }
 
+    const pageNumber = Number(page);
+    const limitNumber = Math.min(Math.max(Number(limit), 1), 200); // Max 200 items per page
+
     let query = `SELECT * FROM ${definition.tableName}`;
     const params: any[] = [];
 
     if (search) {
       const searchConditions = definition.searchFields.map((field: string, index: number) => {
-        return `${field} ILIKE $${index + 1}`;
+        return `CAST(${field} AS TEXT) ILIKE $${index + 1}`;
       });
       query += ` WHERE ${searchConditions.join(' OR ')}`;
       params.push(...definition.searchFields.map(() => `%${search}%`));
     }
 
-    query += ` ORDER BY created_at DESC`;
+    query += ` ORDER BY updated_at DESC, id DESC`;
 
-    const offset = (Number(page) - 1) * Number(limit);
-    query += ` LIMIT ${Number(limit)} OFFSET ${offset}`;
+    const offset = (pageNumber - 1) * limitNumber;
+    query += ` LIMIT ${limitNumber} OFFSET ${offset}`;
 
     const countQuery = search
-      ? `SELECT COUNT(*) FROM ${definition.tableName} WHERE ${definition.searchFields.map((field: string, index: number) => `${field} ILIKE $${index + 1}`).join(' OR ')}`
+      ? `SELECT COUNT(*) FROM ${definition.tableName} WHERE ${definition.searchFields.map((field: string, index: number) => `CAST(${field} AS TEXT) ILIKE $${index + 1}`).join(' OR ')}`
       : `SELECT COUNT(*) FROM ${definition.tableName}`;
 
     const [itemsResult, countResult] = await Promise.all([
@@ -627,12 +630,14 @@ app.get('/api/catalogs/:catalogKey', authenticateToken, async (req, res) => {
       pool.query(countQuery, params)
     ]);
 
+    // Format response to match original NestJS API structure
     res.json({
-      items: itemsResult.rows,
-      total: Number(countResult.rows[0].count),
-      page: Number(page),
-      limit: Number(limit),
-      totalPages: Math.ceil(Number(countResult.rows[0].count) / Number(limit))
+      data: itemsResult.rows,
+      meta: {
+        total: Number(countResult.rows[0].count),
+        page: pageNumber,
+        limit: limitNumber
+      }
     });
   } catch (error) {
     console.error('Find all catalog items error:', error);
