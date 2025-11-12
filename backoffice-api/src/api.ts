@@ -3588,5 +3588,238 @@ app.post('/api/api-docs/seed', authenticateToken, requireAdmin, async (req, res)
   }
 });
 
+// Import geography data from Excel
+app.post('/api/geography/:table/import', authenticateToken, requireAdmin, upload.single('file'), async (req, res) => {
+  try {
+    const { table } = req.params;
+
+    // Validate table name
+    const validTables = ['provinces', 'cantons', 'districts', 'barrios'];
+    if (!validTables.includes(table)) {
+      return res.status(404).json({
+        message: 'Table not found',
+        validTables: validTables
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Parse Excel file
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = xlsx.utils.sheet_to_json(worksheet);
+
+    if (jsonData.length === 0) {
+      return res.status(400).json({ message: 'Excel file is empty or invalid format' });
+    }
+
+    // Validate required columns based on table
+    const firstRow = jsonData[0] as any;
+    const tableName = table === 'provinces' ? 'provincias' :
+                    table === 'cantons' ? 'cantones' :
+                    table === 'districts' ? 'distritos' : 'barrios';
+
+    let requiredColumns: string[] = [];
+    let validationFunction: (row: any, i: number) => { isValid: boolean; data: any; error?: string };
+
+    // Default validation function (should never be reached)
+    validationFunction = () => ({ isValid: false, error: 'Invalid table', data: null });
+
+    if (table === 'provinces') {
+      requiredColumns = ['province_code', 'province_name'];
+      validationFunction = (row: any, i: number) => {
+        const province_code = row.province_code || row.codigo_provincia || row.codigoProvincia || row.provinceCode || row.codigo;
+        const province_name = row.province_name || row.nombre || row.nombre_provincia || row.provinceName;
+
+        if (!province_code || province_code.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: province_code is required`, data: null };
+        }
+        if (!province_name || province_name.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: province_name is required`, data: null };
+        }
+
+        return {
+          isValid: true,
+          data: {
+            province_code: parseInt(province_code.toString().trim()),
+            province_name: province_name.toString().trim()
+          }
+        };
+      };
+    } else if (table === 'cantons') {
+      requiredColumns = ['province_code', 'canton_code', 'canton_name'];
+      validationFunction = (row: any, i: number) => {
+        const province_code = row.province_code || row.codigo_provincia || row.codigoProvincia || row.provinceCode || row.codigo;
+        const canton_code = row.canton_code || row.codigo_canton || row.codigoCanton || row.cantonCode;
+        const canton_name = row.canton_name || row.nombre || row.nombre_canton || row.cantonName;
+
+        if (!province_code || province_code.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: province_code is required`, data: null };
+        }
+        if (!canton_code || canton_code.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: canton_code is required`, data: null };
+        }
+        if (!canton_name || canton_name.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: canton_name is required`, data: null };
+        }
+
+        return {
+          isValid: true,
+          data: {
+            province_code: parseInt(province_code.toString().trim()),
+            canton_code: canton_code.toString().trim(),
+            canton_name: canton_name.toString().trim()
+          }
+        };
+      };
+    } else if (table === 'districts') {
+      requiredColumns = ['province_code', 'canton_code', 'district_code', 'district_name'];
+      validationFunction = (row: any, i: number) => {
+        const province_code = row.province_code || row.codigo_provincia || row.codigoProvincia || row.provinceCode || row.codigo;
+        const canton_code = row.canton_code || row.codigo_canton || row.codigoCanton || row.cantonCode;
+        const district_code = row.district_code || row.codigo_distrito || row.codigoDistrito || row.districtCode;
+        const district_name = row.district_name || row.nombre || row.nombre_distrito || row.districtName;
+
+        if (!province_code || province_code.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: province_code is required`, data: null };
+        }
+        if (!canton_code || canton_code.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: canton_code is required`, data: null };
+        }
+        if (!district_code || district_code.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: district_code is required`, data: null };
+        }
+        if (!district_name || district_name.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: district_name is required`, data: null };
+        }
+
+        return {
+          isValid: true,
+          data: {
+            province_code: parseInt(province_code.toString().trim()),
+            canton_code: canton_code.toString().trim(),
+            district_code: district_code.toString().trim(),
+            district_name: district_name.toString().trim()
+          }
+        };
+      };
+    } else if (table === 'barrios') {
+      requiredColumns = ['province_code', 'canton_code', 'district_code', 'barrio_name'];
+      validationFunction = (row: any, i: number) => {
+        const province_code = row.province_code || row.codigo_provincia || row.codigoProvincia || row.provinceCode || row.codigo;
+        const canton_code = row.canton_code || row.codigo_canton || row.codigoCanton || row.cantonCode;
+        const district_code = row.district_code || row.codigo_distrito || row.codigoDistrito || row.districtCode;
+        const barrio_name = row.barrio_name || row.nombre || row.nombre_barrio || row.barrioName;
+
+        if (!province_code || province_code.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: province_code is required`, data: null };
+        }
+        if (!canton_code || canton_code.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: canton_code is required`, data: null };
+        }
+        if (!district_code || district_code.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: district_code is required`, data: null };
+        }
+        if (!barrio_name || barrio_name.toString().trim() === '') {
+          return { isValid: false, error: `Row ${i + 2}: barrio_name is required`, data: null };
+        }
+
+        return {
+          isValid: true,
+          data: {
+            province_code: parseInt(province_code.toString().trim()),
+            canton_code: canton_code.toString().trim(),
+            district_code: district_code.toString().trim(),
+            barrio_name: barrio_name.toString().trim()
+          }
+        };
+      };
+    }
+
+    let insertedCount = 0;
+    let skippedCount = 0;
+    const errors = [];
+
+    // Process each row
+    for (let i = 0; i < jsonData.length; i++) {
+      const row = jsonData[i] as any;
+
+      try {
+        const validation = validationFunction(row, i);
+
+        if (!validation.isValid) {
+          (errors as string[]).push(validation.error || `Row ${i + 2}: Validation failed`);
+          skippedCount++;
+          continue;
+        }
+
+        const data = validation.data;
+
+        // Check if record already exists (based on unique constraints)
+        let checkQuery: string;
+        let checkParams: any[];
+
+        if (table === 'provinces') {
+          checkQuery = `SELECT id FROM ${tableName} WHERE province_code = $1`;
+          checkParams = [data.province_code];
+        } else if (table === 'cantons') {
+          checkQuery = `SELECT id FROM ${tableName} WHERE province_code = $1 AND canton_code = $2`;
+          checkParams = [data.province_code, data.canton_code];
+        } else if (table === 'districts') {
+          checkQuery = `SELECT id FROM ${tableName} WHERE province_code = $1 AND canton_code = $2 AND district_code = $3`;
+          checkParams = [data.province_code, data.canton_code, data.district_code];
+        } else {
+          checkQuery = `SELECT id FROM ${tableName} WHERE province_code = $1 AND canton_code = $2 AND district_code = $3 AND barrio_name = $4`;
+          checkParams = [data.province_code, data.canton_code, data.district_code, data.barrio_name];
+        }
+
+        const existingItem = await pool.query(checkQuery, checkParams);
+
+        if (existingItem.rows.length > 0) {
+          skippedCount++;
+          continue;
+        }
+
+        // Insert the new record
+        const fields = Object.keys(data);
+        const values = Object.values(data);
+        const placeholders = fields.map((_, index) => `$${index + 1}`).join(', ');
+
+        const insertQuery = `
+          INSERT INTO ${tableName} (${fields.join(', ')}, created_at, updated_at)
+          VALUES (${placeholders}, NOW(), NOW())
+          RETURNING *
+        `;
+
+        await pool.query(insertQuery, values);
+        insertedCount++;
+
+      } catch (rowError) {
+        console.error(`Error processing row ${i + 2}:`, rowError);
+        (errors as string[]).push(`Row ${i + 2}: ${rowError.message}`);
+        skippedCount++;
+      }
+    }
+
+    res.json({
+      message: 'Geography import completed',
+      summary: {
+        total: jsonData.length,
+        inserted: insertedCount,
+        skipped: skippedCount,
+        errors: errors.length
+      },
+      errors: errors
+    });
+
+  } catch (error) {
+    console.error('Geography import error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Export for Vercel
 export default app;
