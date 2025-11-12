@@ -1330,20 +1330,37 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
     const hasNombre = 'nombre' in firstRow || 'Nombre' in firstRow || 'name' in firstRow || 'Name' in firstRow;
     const hasCodigo = 'codigo' in firstRow || 'código' in firstRow || 'Codigo' in firstRow || 'Code' in firstRow;
 
+    // Special validation for unidades-medida
+    if (catalogKey === 'unidades-medida') {
+      const hasUnidad = 'unidad' in firstRow || 'Unidad' in firstRow || 'unit' in firstRow || 'Unit' in firstRow;
+      const hasSimbolo = 'simbolo' in firstRow || 'símbolo' in firstRow || 'Simbolo' in firstRow || 'Símbolo' in firstRow || 'symbol' in firstRow || 'Symbol' in firstRow;
+      const hasTipoUnidad = 'tipoUnidad' in firstRow || 'tipounidad' in firstRow || 'TipoUnidad' in firstRow || 'tipo unidad' in firstRow || 'Tipo Unidad' in firstRow || 'unitType' in firstRow || 'unittype' in firstRow;
+
+      if (!hasUnidad || !hasSimbolo || !hasTipoUnidad) {
+        return res.status(400).json({
+          message: 'Excel file for unidades-medida must contain columns for unidad, simbolo, and tipoUnidad',
+          requiredColumns: ['unidad', 'simbolo', 'tipoUnidad'],
+          foundColumns: Object.keys(firstRow)
+        });
+      }
+    }
+
     // Check if this catalog uses 'nombre' instead of 'descripcion'
     const usesNombre = definition.fields.some(field => field.name === 'nombre');
 
-    if (usesNombre) {
-      if (!hasNombre) {
-        return res.status(400).json({
-          message: 'Excel file must contain a "nombre" column'
-        });
-      }
-    } else {
-      if (!hasDescripcion) {
-        return res.status(400).json({
-          message: 'Excel file must contain a "descripcion" column'
-        });
+    if (catalogKey !== 'unidades-medida') {
+      if (usesNombre) {
+        if (!hasNombre) {
+          return res.status(400).json({
+            message: 'Excel file must contain a "nombre" column'
+          });
+        }
+      } else {
+        if (!hasDescripcion) {
+          return res.status(400).json({
+            message: 'Excel file must contain a "descripcion" column'
+          });
+        }
       }
     }
 
@@ -1361,6 +1378,55 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
         let descripcionField = row.descripcion || row.descripción || row.Descripcion || row.Description || row.descripcion?.trim();
         let nombreField = row.nombre || row.Nombre || row.name || row.Name || row.nombre?.trim();
         let codigo = row.codigo || row.código || row.Codigo || row.Code || row.codigo?.trim();
+
+        // Special handling for unidades-medida
+        if (catalogKey === 'unidades-medida') {
+          const unidad = row.unidad || row.Unidad || row.unit || row.Unit;
+          const simbolo = row.simbolo || row.símbolo || row.Simbolo || row.Símbolo || row.symbol || row.Symbol;
+          const tipoUnidad = row.tipoUnidad || row.tipounidad || row.TipoUnidad || row['tipo unidad'] || row['Tipo Unidad'] || row.unitType || row.unittype;
+
+          if (!unidad || unidad.toString().trim() === '') {
+            (errors as string[]).push(`Row ${i + 2}: unidad is required`);
+            skippedCount++;
+            continue;
+          }
+          if (!simbolo || simbolo.toString().trim() === '') {
+            (errors as string[]).push(`Row ${i + 2}: simbolo is required`);
+            skippedCount++;
+            continue;
+          }
+          if (!tipoUnidad || tipoUnidad.toString().trim() === '') {
+            (errors as string[]).push(`Row ${i + 2}: tipoUnidad is required`);
+            skippedCount++;
+            continue;
+          }
+
+          // Check if unidad already exists
+          const existingItem = await pool.query(
+            `SELECT id FROM ${tableName} WHERE LOWER(TRIM(unidad)) = LOWER($1)`,
+            [unidad.toString().trim()]
+          );
+
+          if (existingItem.rows.length > 0) {
+            skippedCount++;
+            continue;
+          }
+
+          // Insert the new unidad-medida record
+          const insertQuery = `
+            INSERT INTO ${tableName} (unidad, simbolo, tipoUnidad)
+            VALUES ($1, $2, $3)
+          `;
+
+          await pool.query(insertQuery, [
+            unidad.toString().trim(),
+            simbolo.toString().trim(),
+            tipoUnidad.toString().trim()
+          ]);
+
+          insertedCount++;
+          continue;
+        }
 
         // Determine which field to use based on catalog structure
         let fieldValue;
