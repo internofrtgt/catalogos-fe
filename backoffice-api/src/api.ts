@@ -1403,19 +1403,20 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
         }
 
         // Handle numeric codes for actividades-economicas and other catalogs with numeric codes
-        let codigoValue = null;
+        let codigoValue: string | number | null = null;
         if (codigo) {
           const isNumericCode = definition.fields.some(field =>
             field.name === 'codigo' && field.type === 'numeric'
           );
 
           if (isNumericCode) {
-            codigoValue = parseFloat(codigo.toString().trim());
-            if (isNaN(codigoValue)) {
+            const parsedValue = parseFloat(codigo.toString().trim());
+            if (isNaN(parsedValue)) {
               (errors as string[]).push(`Row ${i + 2}: codigo must be a valid number`);
               skippedCount++;
               continue;
             }
+            codigoValue = parsedValue;
           } else {
             codigoValue = codigo.toString().trim();
           }
