@@ -8,7 +8,9 @@
       "Bash(git push:*)",
       "Bash(git remote set-url:*)",
       "Bash(openssl rand:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
