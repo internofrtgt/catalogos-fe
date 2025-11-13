@@ -193,16 +193,16 @@ export class GeographyService {
   }
 
   async createCanton(dto: CreateCantonDto): Promise<Canton> {
-    const province = await this.findProvinceByCode(dto.provinceCode);
+    const province = await this.findProvinceByCode(dto.codigoProvincia);
     if (!province) {
       throw new NotFoundException(
-        `No se encontró la provincia código ${dto.provinceCode}`,
+        `No se encontró la provincia código ${dto.codigoProvincia}`,
       );
     }
 
     const canton = this.cantonsRepository.create({
       ...dto,
-      provinciaNombre: province.nombre,
+      provincia: province.nombre,
     });
     return this.cantonsRepository.save(canton);
   }
@@ -210,14 +210,14 @@ export class GeographyService {
   async updateCanton(id: string, dto: UpdateCantonDto): Promise<Canton> {
     const canton = await this.getCanton(id);
 
-    if (dto.provinceCode) {
-      const province = await this.findProvinceByCode(dto.provinceCode);
+    if (dto.codigoProvincia) {
+      const province = await this.findProvinceByCode(dto.codigoProvincia);
       if (!province) {
         throw new NotFoundException(
-          `No se encontró la provincia código ${dto.provinceCode}`,
+          `No se encontró la provincia código ${dto.codigoProvincia}`,
         );
       }
-      canton.provinciaNombre = province.nombre;
+      canton.provincia = province.nombre;
     }
 
     const merged = this.cantonsRepository.merge(canton, dto);
@@ -237,7 +237,7 @@ export class GeographyService {
   ): Promise<GeoImportResult<CreateCantonDto>> {
     const parsed = await this.parseExcel<CreateCantonDto>(buffer, [
       {
-        name: 'provinciaNombre',
+        name: 'provincia',
         type: 'string',
         required: true,
         excelKeys: ['provincia'],
@@ -350,19 +350,19 @@ export class GeographyService {
 
   async createDistrict(dto: CreateDistrictDto): Promise<District> {
     const canton = await this.findCantonByCode(
-      dto.provinceCode,
-      dto.cantonCode,
+      dto.codigoProvincia,
+      parseInt(dto.codigoCanton),
     );
     if (!canton) {
       throw new NotFoundException(
-        `Cantón código ${dto.cantonCode} de la provincia ${dto.provinceCode} inexistente`,
+        `Cantón código ${dto.codigoCanton} de la provincia ${dto.codigoProvincia} inexistente`,
       );
     }
 
     const district = this.districtsRepository.create({
       ...dto,
-      provinciaNombre: canton.provinciaNombre,
-      cantonNombre: canton.nombre,
+      provincia: canton.provincia,
+      cantonName: canton.canton,
     });
     return this.districtsRepository.save(district);
   }
@@ -373,9 +373,9 @@ export class GeographyService {
   ): Promise<District> {
     const district = await this.getDistrict(id);
 
-    if (dto.provinceCode || dto.cantonCode) {
-      const provinceCode = dto.provinceCode ?? district.codigoProvincia;
-      const cantonCode = dto.cantonCode ?? district.codigoCanton;
+    if (dto.codigoProvincia || dto.codigoCanton) {
+      const provinceCode = dto.codigoProvincia ?? district.codigoProvincia;
+      const cantonCode = dto.codigoCanton ? parseInt(dto.codigoCanton) : parseInt(district.codigoCanton);
       const canton = await this.findCantonByCode(provinceCode, cantonCode);
       if (!canton) {
         throw new NotFoundException(
@@ -405,7 +405,7 @@ export class GeographyService {
   ): Promise<GeoImportResult<CreateDistrictDto>> {
     const parsed = await this.parseExcel<CreateDistrictDto>(buffer, [
       {
-        name: 'provinciaNombre',
+        name: 'provincia',
         type: 'string',
         required: true,
         excelKeys: ['provincia'],
@@ -417,7 +417,7 @@ export class GeographyService {
         excelKeys: ['codigo', 'codigoprovincia'],
       },
       {
-        name: 'cantonNombre',
+        name: 'canton',
         type: 'string',
         required: true,
         excelKeys: ['canton'],
@@ -460,8 +460,8 @@ export class GeographyService {
       validRows.push({
         data: {
           ...row.data,
-          provinciaNombre: canton.provinciaNombre,
-          cantonNombre: canton.nombre,
+          provincia: canton.provincia,
+          cantonName: canton.canton,
         },
         rowNumber: row.rowNumber,
       });
@@ -568,13 +568,13 @@ export class GeographyService {
   ): Promise<Barrio> {
     const barrio = await this.getBarrio(id);
     const enriched = await this.enrichBarrioPayload({
-      provinciaNombre: dto.provinciaNombre ?? barrio.provinciaNombre,
-      provinceCode: dto.provinceCode ?? barrio.codigoProvincia,
-      cantonNombre: dto.cantonNombre ?? barrio.cantonName,
-      cantonCode: dto.cantonCode ?? barrio.codigoCanton,
-      districtName: dto.districtName ?? barrio.distritoName,
-      districtCode: dto.districtCode ?? barrio.codigoDistrito ?? undefined,
-      nombre: dto.nombre ?? barrio.nombre,
+      provincia: dto.provincia ?? barrio.provincia,
+      codigoProvincia: dto.codigoProvincia ?? barrio.codigoProvincia,
+      canton: dto.canton ?? barrio.cantonName,
+      codigoCanton: dto.codigoCanton ?? barrio.codigoCanton,
+      distrito: dto.distrito ?? barrio.distritoName,
+      codigoDistrito: dto.codigoDistrito ?? barrio.codigoDistrito ?? undefined,
+      barrio: dto.barrio ?? barrio.barrio,
     });
     const merged = this.barriosRepository.merge(barrio, enriched);
     return this.barriosRepository.save(merged);
@@ -593,7 +593,7 @@ export class GeographyService {
   ): Promise<GeoImportResult<CreateBarrioDto>> {
     const parsed = await this.parseExcel<CreateBarrioDto>(buffer, [
       {
-        name: 'provinciaNombre',
+        name: 'provincia',
         type: 'string',
         required: true,
         excelKeys: ['provincia'],
@@ -605,7 +605,7 @@ export class GeographyService {
         excelKeys: ['codigo', 'codigoprovincia'],
       },
       {
-        name: 'cantonNombre',
+        name: 'canton',
         type: 'string',
         required: true,
         excelKeys: ['canton'],
@@ -617,13 +617,13 @@ export class GeographyService {
         excelKeys: ['codigo1', 'codigocanton'],
       },
       {
-        name: 'districtName',
+        name: 'distrito',
         type: 'string',
         required: true,
         excelKeys: ['distrito'],
       },
       {
-        name: 'nombre',
+        name: 'barrio',
         type: 'string',
         required: true,
         excelKeys: ['barrio', 'nombre'],
@@ -708,28 +708,28 @@ export class GeographyService {
 
     const district =
       (await this.findDistrictByCodes(
-        dto.provinceCode,
-        dto.cantonCode,
-        dto.districtCode ?? null,
+        dto.codigoProvincia,
+        parseInt(dto.codigoCanton),
+        dto.codigoDistrito ? parseInt(dto.codigoDistrito) : null,
       )) ??
       (await this.findDistrictByName(
-        dto.provinceCode,
-        dto.cantonCode,
-        dto.districtName,
+        dto.codigoProvincia,
+        parseInt(dto.codigoCanton),
+        dto.distrito,
       ));
 
     if (!district) {
       throw new NotFoundException(
-        `Distrito "${dto.districtName}" inexistente en cantón ${dto.cantonCode}`,
+        `Distrito "${dto.distrito}" inexistente en cantón ${dto.codigoCanton}`,
       );
     }
 
     return {
       ...dto,
-      provinciaNombre: province.nombre,
-      cantonNombre: canton.canton,
-      districtName: district.distritoName,
-      districtCode: district.codigoDistrito,
+      provincia: province.nombre,
+      canton: canton.canton,
+      distrito: district.distritoName,
+      codigoDistrito: district.codigoDistrito,
       provinceKey: this.buildProvinceKey(province.nombre),
     };
   }
