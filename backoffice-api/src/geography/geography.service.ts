@@ -168,11 +168,11 @@ export class GeographyService {
       this.cantonsRepository,
       'canton',
       query,
-      ['nombre', 'provinciaNombre', 'codigo', 'provinceCode'],
+      ['nombre', 'provincia', 'codigoCanton', 'codigoProvincia'],
       (qb) => {
-        if (query.provinceCode) {
-          qb.andWhere('canton.codigoProvincia = :provinceCode', {
-            provinceCode: query.provinceCode,
+        if (query.codigoProvincia) {
+          qb.andWhere('canton.codigoProvincia = :codigoProvincia', {
+            codigoProvincia: query.codigoProvincia,
           });
         }
         qb.orderBy('canton.codigoProvincia', 'ASC').addOrderBy(
@@ -266,18 +266,18 @@ export class GeographyService {
     const validRows: Array<{ data: CreateCantonDto; rowNumber: number }> = [];
 
     for (const row of parsed.rows) {
-      const province = await this.findProvinceByCode(row.data.provinceCode);
+      const province = await this.findProvinceByCode(row.data.codigoProvincia);
       if (!province) {
         errors.push({
           row: row.rowNumber,
-          message: `provincia código ${row.data.provinceCode} inexistente`,
+          message: `provincia código ${row.data.codigoProvincia} inexistente`,
         });
         continue;
       }
       validRows.push({
         data: {
           ...row.data,
-          provinciaNombre: province.nombre,
+          provincia: province.nombre,
         },
         rowNumber: row.rowNumber,
       });
@@ -319,16 +319,16 @@ export class GeographyService {
       this.districtsRepository,
       'district',
       query,
-      ['nombre', 'cantonNombre', 'provinciaNombre', 'codigo', 'provinceCode', 'cantonCode'],
+      ['nombre', 'canton', 'provincia', 'codigoDistrito', 'codigoProvincia', 'codigoCanton'],
       (qb) => {
-        if (query.provinceCode) {
-          qb.andWhere('district.codigoProvincia = :provinceCode', {
-            provinceCode: query.provinceCode,
+        if (query.codigoProvincia) {
+          qb.andWhere('district.codigoProvincia = :codigoProvincia', {
+            codigoProvincia: query.codigoProvincia,
           });
         }
-        if (query.cantonCode) {
-          qb.andWhere('district.codigoCanton = :cantonCode', {
-            cantonCode: query.cantonCode,
+        if (query.codigoCanton) {
+          qb.andWhere('district.codigoCanton = :codigoCanton', {
+            codigoCanton: query.codigoCanton,
           });
         }
         qb
@@ -360,9 +360,12 @@ export class GeographyService {
     }
 
     const district = this.districtsRepository.create({
-      ...dto,
+      codigoProvincia: dto.codigoProvincia,
+      codigoCanton: dto.codigoCanton,
+      codigoDistrito: dto.codigoDistrito,
       provincia: canton.provincia,
       cantonName: canton.canton,
+      distritoName: dto.distrito,
     });
     return this.districtsRepository.save(district);
   }
@@ -383,7 +386,7 @@ export class GeographyService {
         );
       }
       district.codigoProvincia = provinceCode;
-      district.codigoCanton = cantonCode;
+      district.codigoCanton = cantonCode.toString();
       district.provincia = canton.provincia;
       district.cantonName = canton.canton;
     }
@@ -447,13 +450,13 @@ export class GeographyService {
 
     for (const row of parsed.rows) {
       const canton = await this.findCantonByCode(
-        row.data.provinceCode,
-        row.data.cantonCode,
+        row.data.codigoProvincia,
+        parseInt(row.data.codigoCanton),
       );
       if (!canton) {
         errors.push({
           row: row.rowNumber,
-          message: `Cantón código ${row.data.cantonCode} inexistente para provincia ${row.data.provinceCode}`,
+          message: `Cantón código ${row.data.codigoCanton} inexistente para provincia ${row.data.codigoProvincia}`,
         });
         continue;
       }
@@ -461,7 +464,7 @@ export class GeographyService {
         data: {
           ...row.data,
           provincia: canton.provincia,
-          cantonName: canton.canton,
+          canton: canton.canton,
         },
         rowNumber: row.rowNumber,
       });
@@ -481,7 +484,14 @@ export class GeographyService {
       });
     }
 
-    const values = deduped.records;
+    const values = deduped.records.map(record => ({
+      codigoProvincia: record.codigoProvincia,
+      codigoCanton: record.codigoCanton,
+      codigoDistrito: record.codigoDistrito,
+      provincia: record.provincia,
+      cantonName: record.canton,
+      distritoName: record.distrito,
+    }));
 
     if (values.length > 0) {
       if (mode === 'replace') {
@@ -509,28 +519,28 @@ export class GeographyService {
       'barrio',
       query,
       [
-        'nombre',
-        'districtName',
-        'provinciaNombre',
-        'cantonNombre',
-        'provinceCode',
-        'cantonCode',
-        'districtCode',
+        'barrio',
+        'distrito',
+        'provincia',
+        'cantonName',
+        'codigoProvincia',
+        'codigoCanton',
+        'codigoDistrito',
       ],
       (qb) => {
-        if (query.provinceCode) {
-          qb.andWhere('barrio.codigoProvincia = :provinceCode', {
-            provinceCode: query.provinceCode,
+        if (query.codigoProvincia) {
+          qb.andWhere('barrio.codigoProvincia = :codigoProvincia', {
+            codigoProvincia: query.codigoProvincia,
           });
         }
-        if (query.cantonCode) {
-          qb.andWhere('barrio.codigoCanton = :cantonCode', {
-            cantonCode: query.cantonCode,
+        if (query.codigoCanton) {
+          qb.andWhere('barrio.codigoCanton = :codigoCanton', {
+            codigoCanton: query.codigoCanton,
           });
         }
-        if (query.districtName) {
-          qb.andWhere('LOWER(barrio.districtName) = :districtName', {
-            districtName: this.normaliseSearch(query.districtName),
+        if (query.distrito) {
+          qb.andWhere('LOWER(barrio.distritoName) = :distrito', {
+            distrito: this.normaliseSearch(query.distrito),
           });
         }
         if (query.provinceKey) {
@@ -558,7 +568,16 @@ export class GeographyService {
 
   async createBarrio(dto: CreateBarrioDto): Promise<Barrio> {
     const enriched = await this.enrichBarrioPayload(dto);
-    const barrio = this.barriosRepository.create(enriched);
+    const barrio = this.barriosRepository.create({
+      codigoProvincia: enriched.codigoProvincia,
+      codigoCanton: enriched.codigoCanton,
+      codigoDistrito: enriched.codigoDistrito,
+      provincia: enriched.provincia,
+      cantonName: enriched.canton,
+      distritoName: enriched.distrito,
+      barrio: enriched.barrio,
+      provinceKey: enriched.provinceKey,
+    });
     return this.barriosRepository.save(barrio);
   }
 
@@ -576,7 +595,19 @@ export class GeographyService {
       codigoDistrito: dto.codigoDistrito ?? barrio.codigoDistrito ?? undefined,
       barrio: dto.barrio ?? barrio.barrio,
     });
-    const merged = this.barriosRepository.merge(barrio, enriched);
+
+    const barrioData = {
+      codigoProvincia: enriched.codigoProvincia,
+      codigoCanton: enriched.codigoCanton,
+      codigoDistrito: enriched.codigoDistrito,
+      provincia: enriched.provincia,
+      cantonName: enriched.canton,
+      distritoName: enriched.distrito,
+      barrio: enriched.barrio,
+      provinceKey: enriched.provinceKey,
+    };
+
+    const merged = this.barriosRepository.merge(barrio, barrioData);
     return this.barriosRepository.save(merged);
   }
 
@@ -666,7 +697,16 @@ export class GeographyService {
       });
     }
 
-    const values = deduped.records;
+    const values = deduped.records.map(record => ({
+      codigoProvincia: record.codigoProvincia,
+      codigoCanton: record.codigoCanton,
+      codigoDistrito: record.codigoDistrito,
+      provincia: record.provincia,
+      cantonName: record.canton,
+      distritoName: record.distrito,
+      barrio: record.barrio,
+      provinceKey: record.provinceKey,
+    }));
 
     if (values.length > 0) {
       if (mode === 'replace') {
@@ -692,17 +732,17 @@ export class GeographyService {
   private async enrichBarrioPayload(
     dto: CreateBarrioDto,
   ): Promise<CreateBarrioDto & { provinceKey: string }> {
-    const province = await this.findProvinceByCode(dto.provinceCode);
+    const province = await this.findProvinceByCode(dto.codigoProvincia);
     if (!province) {
       throw new NotFoundException(
-        `provincia código ${dto.provinceCode} inexistente`,
+        `provincia código ${dto.codigoProvincia} inexistente`,
       );
     }
 
-    const canton = await this.findCantonByCode(dto.provinceCode, dto.cantonCode);
+    const canton = await this.findCantonByCode(dto.codigoProvincia, parseInt(dto.codigoCanton));
     if (!canton) {
       throw new NotFoundException(
-        `Cantón código ${dto.cantonCode} inexistente en provincia ${dto.provinceCode}`,
+        `Cantón código ${dto.codigoCanton} inexistente en provincia ${dto.codigoProvincia}`,
       );
     }
 
