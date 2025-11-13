@@ -171,11 +171,11 @@ export class GeographyService {
       ['nombre', 'provinciaNombre', 'codigo', 'provinceCode'],
       (qb) => {
         if (query.provinceCode) {
-          qb.andWhere('canton.provinceCode = :provinceCode', {
+          qb.andWhere('canton.codigoProvincia = :provinceCode', {
             provinceCode: query.provinceCode,
           });
         }
-        qb.orderBy('canton.provinceCode', 'ASC').addOrderBy(
+        qb.orderBy('canton.codigoProvincia', 'ASC').addOrderBy(
           'canton.codigo',
           'ASC',
         );
@@ -302,7 +302,7 @@ export class GeographyService {
       if (mode === 'replace') {
         await this.cantonsRepository.createQueryBuilder().delete().execute();
       }
-      await this.cantonsRepository.upsert(values, ['provinceCode', 'codigo']);
+      await this.cantonsRepository.upsert(values, ['codigoProvincia', 'codigoCanton']);
     }
 
     return {
@@ -322,19 +322,19 @@ export class GeographyService {
       ['nombre', 'cantonNombre', 'provinciaNombre', 'codigo', 'provinceCode', 'cantonCode'],
       (qb) => {
         if (query.provinceCode) {
-          qb.andWhere('district.provinceCode = :provinceCode', {
+          qb.andWhere('district.codigoProvincia = :provinceCode', {
             provinceCode: query.provinceCode,
           });
         }
         if (query.cantonCode) {
-          qb.andWhere('district.cantonCode = :cantonCode', {
+          qb.andWhere('district.codigoCanton = :cantonCode', {
             cantonCode: query.cantonCode,
           });
         }
         qb
-          .orderBy('district.provinceCode', 'ASC')
-          .addOrderBy('district.cantonCode', 'ASC')
-          .addOrderBy('district.codigo', 'ASC');
+          .orderBy('district.codigoProvincia', 'ASC')
+          .addOrderBy('district.codigoCanton', 'ASC')
+          .addOrderBy('district.codigoDistrito', 'ASC');
       },
     );
     return { data, meta };
@@ -374,18 +374,18 @@ export class GeographyService {
     const district = await this.getDistrict(id);
 
     if (dto.provinceCode || dto.cantonCode) {
-      const provinceCode = dto.provinceCode ?? district.provinceCode;
-      const cantonCode = dto.cantonCode ?? district.cantonCode;
+      const provinceCode = dto.provinceCode ?? district.codigoProvincia;
+      const cantonCode = dto.cantonCode ?? district.codigoCanton;
       const canton = await this.findCantonByCode(provinceCode, cantonCode);
       if (!canton) {
         throw new NotFoundException(
           `Cantón código ${cantonCode} de la provincia ${provinceCode} inexistente`,
         );
       }
-      district.provinceCode = provinceCode;
-      district.cantonCode = cantonCode;
-      district.provinciaNombre = canton.provinciaNombre;
-      district.cantonNombre = canton.nombre;
+      district.codigoProvincia = provinceCode;
+      district.codigoCanton = cantonCode;
+      district.provincia = canton.provincia;
+      district.cantonName = canton.canton;
     }
 
     const merged = this.districtsRepository.merge(district, dto);
@@ -488,9 +488,9 @@ export class GeographyService {
         await this.districtsRepository.createQueryBuilder().delete().execute();
       }
       await this.districtsRepository.upsert(values, [
-        'provinceCode',
-        'cantonCode',
-        'codigo',
+        'codigoProvincia',
+        'codigoCanton',
+        'codigoDistrito',
       ]);
     }
 
@@ -519,12 +519,12 @@ export class GeographyService {
       ],
       (qb) => {
         if (query.provinceCode) {
-          qb.andWhere('barrio.provinceCode = :provinceCode', {
+          qb.andWhere('barrio.codigoProvincia = :provinceCode', {
             provinceCode: query.provinceCode,
           });
         }
         if (query.cantonCode) {
-          qb.andWhere('barrio.cantonCode = :cantonCode', {
+          qb.andWhere('barrio.codigoCanton = :cantonCode', {
             cantonCode: query.cantonCode,
           });
         }
@@ -539,8 +539,8 @@ export class GeographyService {
           });
         }
         qb
-          .orderBy('barrio.provinceCode', 'ASC')
-          .addOrderBy('barrio.cantonCode', 'ASC')
+          .orderBy('barrio.codigoProvincia', 'ASC')
+          .addOrderBy('barrio.codigoCanton', 'ASC')
           .addOrderBy('barrio.districtName', 'ASC')
           .addOrderBy('barrio.nombre', 'ASC');
       },
@@ -569,11 +569,11 @@ export class GeographyService {
     const barrio = await this.getBarrio(id);
     const enriched = await this.enrichBarrioPayload({
       provinciaNombre: dto.provinciaNombre ?? barrio.provinciaNombre,
-      provinceCode: dto.provinceCode ?? barrio.provinceCode,
-      cantonNombre: dto.cantonNombre ?? barrio.cantonNombre,
-      cantonCode: dto.cantonCode ?? barrio.cantonCode,
-      districtName: dto.districtName ?? barrio.districtName,
-      districtCode: dto.districtCode ?? barrio.districtCode ?? undefined,
+      provinceCode: dto.provinceCode ?? barrio.codigoProvincia,
+      cantonNombre: dto.cantonNombre ?? barrio.cantonName,
+      cantonCode: dto.cantonCode ?? barrio.codigoCanton,
+      districtName: dto.districtName ?? barrio.distritoName,
+      districtCode: dto.districtCode ?? barrio.codigoDistrito ?? undefined,
       nombre: dto.nombre ?? barrio.nombre,
     });
     const merged = this.barriosRepository.merge(barrio, enriched);
@@ -673,10 +673,10 @@ export class GeographyService {
         await this.barriosRepository.createQueryBuilder().delete().execute();
       }
       await this.barriosRepository.upsert(values, [
-        'provinceCode',
-        'cantonCode',
-        'districtName',
-        'nombre',
+        'codigoProvincia',
+        'codigoCanton',
+        'codigoDistrito',
+        'barrio',
       ]);
     }
 
@@ -727,9 +727,9 @@ export class GeographyService {
     return {
       ...dto,
       provinciaNombre: province.nombre,
-      cantonNombre: canton.nombre,
-      districtName: district.nombre,
-      districtCode: district.codigo,
+      cantonNombre: canton.canton,
+      districtName: district.distritoName,
+      districtCode: district.codigoDistrito,
       provinceKey: this.buildProvinceKey(province.nombre),
     };
   }
@@ -747,7 +747,7 @@ export class GeographyService {
     cantonCode: number,
   ): Promise<Canton | null> {
     return this.cantonsRepository.findOne({
-      where: { provinceCode, codigo: cantonCode },
+      where: { codigoProvincia: provinceCode, codigoCanton: cantonCode.toString() },
     });
   }
 
@@ -761,9 +761,9 @@ export class GeographyService {
     }
     return this.districtsRepository.findOne({
       where: {
-        provinceCode,
-        cantonCode,
-        codigo: districtCode,
+        codigoProvincia: provinceCode,
+        codigoCanton: cantonCode.toString(),
+        codigoDistrito: districtCode.toString(),
       },
     });
   }
@@ -775,9 +775,9 @@ export class GeographyService {
   ): Promise<District | null> {
     return this.districtsRepository.findOne({
       where: {
-        provinceCode,
-        cantonCode,
-        nombre: districtName,
+        codigoProvincia: provinceCode,
+        codigoCanton: cantonCode.toString(),
+        distritoName: districtName,
       },
     });
   }
