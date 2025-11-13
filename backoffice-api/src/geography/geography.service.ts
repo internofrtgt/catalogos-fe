@@ -391,7 +391,16 @@ export class GeographyService {
       district.cantonName = canton.canton;
     }
 
-    const merged = this.districtsRepository.merge(district, dto);
+    const updateData: Partial<District> = {
+      codigoProvincia: dto.codigoProvincia ?? district.codigoProvincia,
+      codigoCanton: dto.codigoCanton ?? district.codigoCanton,
+      codigoDistrito: dto.codigoDistrito ?? district.codigoDistrito,
+      provincia: dto.provincia ?? district.provincia,
+      cantonName: dto.canton ?? district.cantonName,
+      distritoName: dto.distrito ?? district.distritoName,
+    };
+
+    const merged = this.districtsRepository.merge(district, updateData);
     return this.districtsRepository.save(merged);
   }
 
@@ -504,9 +513,18 @@ export class GeographyService {
       ]);
     }
 
+    const responseRows = values.map(value => ({
+      codigoProvincia: value.codigoProvincia,
+      codigoCanton: value.codigoCanton,
+      codigoDistrito: value.codigoDistrito,
+      provincia: value.provincia,
+      canton: value.cantonName,
+      distrito: value.distritoName,
+    }));
+
     return {
       imported: values.length,
-      rows: values,
+      rows: responseRows,
       errors,
     };
   }
@@ -720,7 +738,15 @@ export class GeographyService {
       ]);
     }
 
-    const responseRows = values.map(({ provinceKey, ...row }) => row as CreateBarrioDto);
+    const responseRows = values.map(value => ({
+      codigoProvincia: value.codigoProvincia,
+      codigoCanton: value.codigoCanton,
+      codigoDistrito: value.codigoDistrito,
+      provincia: value.provincia,
+      canton: value.cantonName,
+      distrito: value.distritoName,
+      barrio: value.barrio,
+    }));
 
     return {
       imported: values.length,
