@@ -14,7 +14,7 @@
       "src": "backoffice-admin/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "backoffice-admin/dist"
+        "distDir": "dist"
       }
     }
   ],
@@ -25,7 +25,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/backoffice-admin/index.html"
+      "dest": "/index.html"
     }
   ]
 }
