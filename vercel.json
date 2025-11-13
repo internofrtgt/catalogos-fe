@@ -1,11 +1,6 @@
 {
   "buildCommand": "cd backoffice-admin && npm run build",
   "outputDirectory": "backoffice-admin/dist",
-  "functions": {
-    "backoffice-api/src/api.ts": {
-      "maxDuration": 30
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
