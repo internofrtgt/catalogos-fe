@@ -1,5 +1,15 @@
 /// <reference types="vite/client" />
 
+// Declaración manual de ImportMeta para Vite (en caso de que vite/client no se resuelva)
+interface ImportMetaEnv {
+    readonly VITE_API_BASE_URL: string;
+    // más variables de entorno según sea necesario
+}
+
+interface ImportMeta {
+    readonly env: ImportMetaEnv;
+}
+
 // Declaración para importar archivos de imagen
 declare module '*.png' {
     const src: string;
