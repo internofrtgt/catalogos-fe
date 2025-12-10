@@ -1596,6 +1596,63 @@ app.post('/api/catalogs/:catalogKey/import', authenticateToken, requireAdmin, up
           continue;
         }
 
+        // Special handling for CABYS (Catálogo de Bienes y Servicios)
+        if (catalogKey === 'cabys') {
+          const categoria = row.categoria || row.Categoria || row.Categoría || row.categoría || row.category || row.Category;
+          const descripcion = row.descripcion || row.Descripcion || row.Descripción || row.descripción || row.description || row.Description;
+          const impuesto = row.impuesto || row.Impuesto || row.tax || row.Tax;
+          const incluye = row.incluye || row.Incluye || row.includes || row.Includes;
+          const excluye = row.excluye || row.Excluye || row.excludes || row.Excludes;
+
+          if (!categoria || categoria.toString().trim() === '') {
+            (errors as string[]).push(`Row ${i + 2}: categoria is required`);
+            skippedCount++;
+            continue;
+          }
+          if (!descripcion || descripcion.toString().trim() === '') {
+            (errors as string[]).push(`Row ${i + 2}: descripcion is required`);
+            skippedCount++;
+            continue;
+          }
+
+          // Check if categoria+descripcion combination already exists (unique constraint)
+          const existingItem = await pool.query(
+            `SELECT id FROM ${tableName} WHERE LOWER(TRIM(categoria)) = LOWER($1) AND LOWER(TRIM(descripcion)) = LOWER($2)`,
+            [categoria.toString().trim(), descripcion.toString().trim()]
+          );
+
+          if (existingItem.rows.length > 0) {
+            skippedCount++;
+            continue;
+          }
+
+          // Parse impuesto as numeric (can be null)
+          let impuestoValue: number | null = null;
+          if (impuesto !== undefined && impuesto !== null && impuesto.toString().trim() !== '') {
+            const parsedImpuesto = parseFloat(impuesto.toString().trim());
+            if (!isNaN(parsedImpuesto)) {
+              impuestoValue = parsedImpuesto;
+            }
+          }
+
+          // Insert the new CABYS record
+          const insertQuery = `
+            INSERT INTO ${tableName} (categoria, descripcion, impuesto, incluye, excluye)
+            VALUES ($1, $2, $3, $4, $5)
+          `;
+
+          await pool.query(insertQuery, [
+            categoria.toString().trim(),
+            descripcion.toString().trim(),
+            impuestoValue,
+            incluye ? incluye.toString().trim() : null,
+            excluye ? excluye.toString().trim() : null
+          ]);
+
+          insertedCount++;
+          continue;
+        }
+
         // Determine which field to use based on catalog structure
         let fieldValue;
         let fieldName;
