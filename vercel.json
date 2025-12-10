@@ -1,5 +1,6 @@
 {
-  "buildCommand": "cd backoffice-admin && npm install && npm run build",
+  "installCommand": "cd backoffice-admin && npm install",
+  "buildCommand": "cd backoffice-admin && npm run build",
   "outputDirectory": "backoffice-admin/dist",
   "functions": {
     "api/*.ts": {
