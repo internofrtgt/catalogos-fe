@@ -276,6 +276,20 @@ const definitions: Omit<CatalogDefinition, 'entity'>[] = [
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
   },
+  {
+    key: 'cabys',
+    label: 'Catálogo de Bienes y Servicios',
+    tableName: 'cabys',
+    fields: [
+      { name: 'categoria', type: 'string', required: true, length: 1024 },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
+      { name: 'impuesto', type: 'numeric', required: false, precision: 2, scale: 0 },
+      { name: 'incluye', type: 'string', required: false, length: 1024 },
+      { name: 'excluye', type: 'string', required: false, length: 1024 },
+    ],
+    uniqueBy: ['categoria', 'descripcion'],
+    searchFields: ['categoria', 'descripcion'],
+  }
 ];
 
 const numericTransformer = {
@@ -341,18 +355,18 @@ function createEntitySchema(def: Omit<CatalogDefinition, 'entity'>): EntitySchem
     indices:
       def.searchFields.length > 0
         ? def.searchFields.map((column) => ({
-            name: `${def.tableName}_${column}_idx`,
-            columns: [column],
-          }))
+          name: `${def.tableName}_${column}_idx`,
+          columns: [column],
+        }))
         : undefined,
     uniques:
       def.uniqueBy.length > 0
         ? [
-            {
-              name: `${def.tableName}_uq_key`,
-              columns: def.uniqueBy,
-            },
-          ]
+          {
+            name: `${def.tableName}_uq_key`,
+            columns: def.uniqueBy,
+          },
+        ]
         : undefined,
   });
 }
