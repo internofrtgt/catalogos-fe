@@ -208,6 +208,19 @@ export const catalogConfigs: CatalogConfig[] = [
     ],
     uniqueBy: ['codigo'],
   },
+  {
+    key: 'cabys',
+    label: 'Catálogo de Bienes y Servicios',
+    fields: [
+      { name: 'categoria', label: 'Categoría', type: 'string', required: true },
+      { name: 'descripcion', label: 'Descripción', type: 'string', required: true },
+      { name: 'impuesto', label: 'Impuesto', type: 'numeric', required: false },
+      { name: 'incluye', label: 'Incluye', type: 'string', required: false },
+      { name: 'excluye', label: 'Excluye', type: 'string', required: false },
+    ],
+    uniqueBy: ['categoria', 'descripcion'],
+    searchPlaceholder: 'Buscar por categoría o descripción...',
+  },
 ];
 
 export const catalogConfigMap = new Map(
