@@ -289,7 +289,7 @@ const definitions: Omit<CatalogDefinition, 'entity'>[] = [
     ],
     uniqueBy: ['categoria', 'descripcion'],
     searchFields: ['categoria', 'descripcion'],
-  }
+  },
 ];
 
 const numericTransformer = {
