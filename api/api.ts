@@ -32,7 +32,7 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     // Accept Excel files
     if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        file.mimetype === 'application/vnd.ms-excel') {
+      file.mimetype === 'application/vnd.ms-excel') {
       cb(null, true);
     } else {
       cb(new Error('Only Excel files are allowed (.xlsx, .xls)'));
@@ -495,6 +495,20 @@ const catalogDefinitions: any[] = [
     uniqueBy: ['codigo'],
     searchFields: ['descripcion', 'codigo'],
   },
+  {
+    key: 'cabys',
+    label: 'Catálogo de Bienes y Servicios',
+    tableName: 'cabys',
+    fields: [
+      { name: 'categoria', type: 'string', required: true, length: 1024 },
+      { name: 'descripcion', type: 'string', required: true, length: 1024 },
+      { name: 'impuesto', type: 'numeric', required: false, precision: 2, scale: 0 },
+      { name: 'incluye', type: 'string', required: false, length: 1024 },
+      { name: 'excluye', type: 'string', required: false, length: 1024 },
+    ],
+    uniqueBy: ['categoria', 'descripcion'],
+    searchFields: ['categoria', 'descripcion'],
+  },
 ];
 
 const catalogDefinitionsMap = new Map(
@@ -539,8 +553,8 @@ function toCamelCase(str: string): string {
     if (result.includes(word) && result.indexOf(word) > 0) {
       const index = result.indexOf(word);
       result = result.substring(0, index) +
-                word.charAt(0).toUpperCase() +
-                word.substring(1);
+        word.charAt(0).toUpperCase() +
+        word.substring(1);
     }
   }
 
@@ -1976,12 +1990,10 @@ app.post('/api/schemas/update-all', authenticateToken, requireAdmin, async (req,
             continue;
           }
 
-          const currentType = `${columnDef.data_type}${
-            columnDef.numeric_precision ? `(${columnDef.numeric_precision}` : ''
-          }${columnDef.numeric_scale ? `,${columnDef.numeric_scale})` : ''
-          }${
-            columnDef.character_maximum_length ? `(${columnDef.character_maximum_length})` : ''
-          }`;
+          const currentType = `${columnDef.data_type}${columnDef.numeric_precision ? `(${columnDef.numeric_precision}` : ''
+            }${columnDef.numeric_scale ? `,${columnDef.numeric_scale})` : ''
+            }${columnDef.character_maximum_length ? `(${columnDef.character_maximum_length})` : ''
+            }`;
 
           let desiredType = '';
 
@@ -2099,12 +2111,10 @@ app.post('/api/schemas/update-all', authenticateToken, requireAdmin, async (req,
 
           if (!columnDef) continue;
 
-          const currentType = `${columnDef.data_type}${
-            columnDef.numeric_precision ? `(${columnDef.numeric_precision})` : ''
-          }${columnDef.numeric_scale ? `,${columnDef.numeric_scale})` : ''
-          }${
-            columnDef.character_maximum_length ? `(${columnDef.character_maximum_length})` : ''
-          }`;
+          const currentType = `${columnDef.data_type}${columnDef.numeric_precision ? `(${columnDef.numeric_precision})` : ''
+            }${columnDef.numeric_scale ? `,${columnDef.numeric_scale})` : ''
+            }${columnDef.character_maximum_length ? `(${columnDef.character_maximum_length})` : ''
+            }`;
 
           let desiredType = '';
 
@@ -3852,8 +3862,8 @@ app.post('/api/geography/:table/import', authenticateToken, requireAdmin, upload
     // Validate required columns based on table
     const firstRow = jsonData[0] as any;
     const tableName = table === 'provinces' ? 'provincias' :
-                    table === 'cantons' ? 'cantones' :
-                    table === 'districts' ? 'distritos' : 'barrios';
+      table === 'cantons' ? 'cantones' :
+        table === 'districts' ? 'distritos' : 'barrios';
 
     let requiredColumns: string[] = [];
     let validationFunction: (row: any, i: number) => { isValid: boolean; data: any; error?: string };
