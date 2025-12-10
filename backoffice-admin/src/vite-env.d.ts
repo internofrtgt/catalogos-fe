@@ -35,3 +35,21 @@ declare module '*.gif' {
     const src: string;
     export default src;
 }
+
+// Declaración para react-dom/client (React 19)
+declare module 'react-dom/client' {
+    import { Container } from 'react-dom';
+
+    export interface Root {
+        render(children: React.ReactNode): void;
+        unmount(): void;
+    }
+
+    export interface RootOptions {
+        onRecoverableError?: (error: unknown) => void;
+        identifierPrefix?: string;
+    }
+
+    export function createRoot(container: Container, options?: RootOptions): Root;
+    export function hydrateRoot(container: Container, initialChildren: React.ReactNode, options?: RootOptions): Root;
+}
